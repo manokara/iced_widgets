@@ -132,15 +132,42 @@ impl<B: Backend + BackendWithText> hexview::Renderer for Renderer<B> {
             let upper_bound = (lower_bound + column_count).min(data.len());
             let data_slice = &data[lower_bound..upper_bound];
             let byte_count = data_slice.len();
+            let mut np_bytes = String::new();
+            let mut np_ascii = String::new();
+            let has_non_printable = data_slice.iter().any(|b| !ASCII_RANGE.contains(b));
+            let np_have_color = style.non_printable_color.is_some();
             let bytes = data_slice
                 .iter()
                 .enumerate()
                 .fold(String::new(), |mut acc, (i, b)| {
-                    acc.push(HEX_CHARS[(b >> 4) as usize] as char);
-                    acc.push(HEX_CHARS[(b & 0xF) as usize] as char);
+                    let high = HEX_CHARS[(b >> 4) as usize] as char;
+                    let low = HEX_CHARS[(b & 0xF) as usize] as char;
+
+                    if ASCII_RANGE.contains(b) {
+                        acc.push(high);
+                        acc.push(low);
+
+                        if has_non_printable && np_have_color {
+                            np_bytes.push_str("  ");
+                        }
+                    } else {
+                        acc.push_str("  ");
+
+                        if np_have_color {
+                            np_bytes.push(high);
+                            np_bytes.push(low);
+                        } else {
+                            acc.push(high);
+                            acc.push(low);
+                        }
+                    }
 
                     if i != 15 {
                         acc.push(' ');
+
+                        if has_non_printable && np_have_color {
+                            np_bytes.push(' ');
+                        }
                     }
 
                     acc
@@ -150,65 +177,109 @@ impl<B: Backend + BackendWithText> hexview::Renderer for Renderer<B> {
                 .fold(String::new(), |mut acc, b| {
                     if ASCII_RANGE.contains(b) {
                         acc.push(*b as char);
+
+                        if has_non_printable && np_have_color {
+                            np_ascii.push(' ');
+                        }
                     } else {
-                        acc.push('.');
+                        if np_have_color {
+                            acc.push(' ');
+                            np_ascii.push('.');
+                        } else {
+                            acc.push('.');
+                        }
                     }
 
                     acc
                 });
+
             let line_x = bounds_pos.0 + 10.0;
             let line_y = bounds_pos.1 + data_y + i as f32 * (text_size + LINE_SPACING);
 
+            let mut primitives = vec![
+                // Offset
+                Primitive::Text {
+                    content: format!("{:08X}", i * 16),
+                    bounds: Rectangle {
+                        x: line_x,
+                        y: line_y,
+                        width: offset_width,
+                        height: text_size,
+                    },
+                    color: style.offset_color,
+                    size: text_size,
+                    font: HACK_BOLD,
+                    horizontal_alignment: HorizontalAlignment::Left,
+                    vertical_alignment: VerticalAlignment::Top,
+                },
+
+                // Bytes
+                Primitive::Text {
+                    content: bytes,
+                    bounds: Rectangle {
+                        x: bounds_pos.0 + right_of_offset + 20.0,
+                        y: line_y,
+                        width: bytes_width,
+                        height: text_size,
+                    },
+                    color: style.data_color,
+                    size: text_size,
+                    font: HACK_REGULAR,
+                    horizontal_alignment: HorizontalAlignment::Left,
+                    vertical_alignment: VerticalAlignment::Top,
+                },
+
+                // Ascii
+                Primitive::Text {
+                    content: ascii,
+                    bounds: Rectangle {
+                        x: bounds_pos.0 + right_of_bytes + 20.0,
+                        y: line_y,
+                        width: text_size * byte_count as f32,
+                        height: text_size,
+                    },
+                    color: style.data_color,
+                    size: text_size,
+                    font: HACK_REGULAR,
+                    horizontal_alignment: HorizontalAlignment::Left,
+                    vertical_alignment: VerticalAlignment::Top,
+                },
+            ];
+            let non_printable_opt = |c| if has_non_printable { Some(c) } else { None };
+
+            if let Some(color) = style.non_printable_color.and_then(non_printable_opt) {
+                primitives.push(Primitive::Text {
+                    color,
+                    content: np_bytes,
+                    bounds: Rectangle {
+                        x: bounds_pos.0 + right_of_offset + 20.0,
+                        y: line_y,
+                        width: bytes_width,
+                        height: text_size,
+                    },
+                    size: text_size,
+                    font: HACK_REGULAR,
+                    horizontal_alignment: HorizontalAlignment::Left,
+                    vertical_alignment: VerticalAlignment::Top,
+                });
+                primitives.push(Primitive::Text {
+                    color,
+                    content: np_ascii,
+                    bounds: Rectangle {
+                        x: bounds_pos.0 + right_of_bytes + 20.0,
+                        y: line_y,
+                        width: text_size * byte_count as f32,
+                        height: text_size,
+                    },
+                    size: text_size,
+                    font: HACK_REGULAR,
+                    horizontal_alignment: HorizontalAlignment::Left,
+                    vertical_alignment: VerticalAlignment::Top,
+                });
+            }
+
             Primitive::Group {
-                primitives: vec![
-                    // Offset
-                    Primitive::Text {
-                        content: format!("{:08X}", i * 16),
-                        bounds: Rectangle {
-                            x: line_x,
-                            y: line_y,
-                            width: offset_width,
-                            height: text_size,
-                        },
-                        color: style.offset_color,
-                        size: text_size,
-                        font: HACK_BOLD,
-                        horizontal_alignment: HorizontalAlignment::Left,
-                        vertical_alignment: VerticalAlignment::Top,
-                    },
-
-                    // Bytes
-                    Primitive::Text {
-                        content: bytes,
-                        bounds: Rectangle {
-                            x: bounds_pos.0 + right_of_offset + 20.0,
-                            y: line_y,
-                            width: bytes_width,
-                            height: text_size,
-                        },
-                        color: style.data_color,
-                        size: text_size,
-                        font: HACK_REGULAR,
-                        horizontal_alignment: HorizontalAlignment::Left,
-                        vertical_alignment: VerticalAlignment::Top,
-                    },
-
-                    // Ascii
-                    Primitive::Text {
-                        content: ascii,
-                        bounds: Rectangle {
-                            x: bounds_pos.0 + right_of_bytes + 20.0,
-                            y: line_y,
-                            width: text_size * byte_count as f32,
-                            height: text_size,
-                        },
-                        color: style.data_color,
-                        size: text_size,
-                        font: HACK_REGULAR,
-                        horizontal_alignment: HorizontalAlignment::Left,
-                        vertical_alignment: VerticalAlignment::Top,
-                    },
-                ],
+                primitives,
             }
         }).collect();
 
