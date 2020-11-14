@@ -22,6 +22,7 @@ pub struct State {
     cursor: usize,
     text_size: f32,
     column_count: usize,
+    changed_bytes: bool,
 }
 
 pub trait Renderer: iced_native::Renderer {
@@ -34,6 +35,7 @@ pub trait Renderer: iced_native::Renderer {
         style: &Self::Style,
         text_size: f32,
         column_count: usize,
+        data: &[u8],
     ) -> Self::Output;
 }
 
@@ -60,10 +62,12 @@ impl State {
             cursor: 0,
             text_size: 17.0,
             column_count: 16,
+            changed_bytes: false,
         }
     }
     pub fn set_bytes(&mut self, bytes: &[u8]) {
         self.bytes = bytes.to_vec();
+        self.changed_bytes = true;
     }
 
     pub fn set_column_count(&mut self, count: usize) {
@@ -93,6 +97,7 @@ where
         limits: &layout::Limits,
     ) -> layout::Node {
         let limits = limits.width(Length::Fill).height(Length::Fill);
+        let _rows = (self.state.bytes.len() as f32 / self.state.column_count as f32).ceil();
         let size = limits.resolve(Size::ZERO);
 
         layout::Node::new(size)
@@ -100,35 +105,13 @@ where
 
     fn on_event(
         &mut self,
-        event: Event,
+        _event: Event,
         _layout: Layout<'_>,
         _cursor_position: Point,
         _messages: &mut Vec<Message>,
         _renderer: &Renderer,
         _clipboard: Option<&dyn Clipboard>,
     ) {
-        use keyboard::{KeyCode, Event::KeyPressed};
-
-        let text_size_guard = self.state.text_size > 10.0;
-        let column_count_lower_guard = self.state.column_count > 1;
-        let column_count_upper_guard = self.state.column_count < 16;
-
-        match event {
-            Event::Keyboard(KeyPressed { key_code, .. }) => {
-                match key_code {
-                    KeyCode::Q if text_size_guard => self.state.text_size -= 0.01,
-                    KeyCode::A if text_size_guard => self.state.text_size -= 0.1,
-                    KeyCode::Z if text_size_guard => self.state.text_size -= 1.0,
-                    KeyCode::C if column_count_lower_guard => self.state.column_count -= 1,
-                    KeyCode::V if column_count_upper_guard => self.state.column_count += 1,
-                    KeyCode::W => self.state.text_size += 0.01,
-                    KeyCode::S => self.state.text_size += 0.1,
-                    KeyCode::X => self.state.text_size += 1.0,
-                    _ => (),
-                }
-            },
-            _ => (),
-        }
     }
 
     fn draw(
@@ -145,6 +128,7 @@ where
             &self.style,
             self.state.text_size,
             self.state.column_count.max(1),
+            &self.state.bytes,
         )
     }
 
@@ -152,6 +136,7 @@ where
         struct Marker;
 
         std::any::TypeId::of::<Marker>().hash(state);
+        self.state.changed_bytes.hash(state);
     }
 }
 

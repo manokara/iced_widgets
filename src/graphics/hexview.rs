@@ -1,3 +1,4 @@
+use std::ops::Range;
 use iced_graphics::{
     Backend, Font, HorizontalAlignment, VerticalAlignment,
     Primitive, Size, Renderer, backend::Text as BackendWithText,
@@ -25,13 +26,12 @@ const HACK_BOLD: Font = Font::External {
     bytes: load_font!("hack-bold.ttf"),
 };
 
-const TEST_DATA: &[u8] = b"Lorem ipsum dolor sit amet, consectetur adipiscing elit. Sed \
-                           interdum massa interdum gravida gravida. Nam ullamcorper.";
 const HEX_CHARS: &[u8] = b"0123456789ABCDEF";
 const OFFSET_REFERENCE: &'static str = "00000000";
 const BYTE_COLUMNS: &'static str = "00 01 02 03 04 05 06 07 08 09 0A 0B 0C 0D 0E 0F";
 const LINE_SPACING: f32 = 9.0;
 const LARGE_BOUNDS: Size<f32> = Size::new(640.0, 480.0);
+const ASCII_RANGE: Range<u8> = 32..128;
 
 impl<B: Backend + BackendWithText> hexview::Renderer for Renderer<B> {
     type Style = Box<dyn StyleSheet>;
@@ -43,6 +43,7 @@ impl<B: Backend + BackendWithText> hexview::Renderer for Renderer<B> {
         style_sheet: &Self::Style,
         text_size: f32,
         column_count: usize,
+        data: &[u8],
     ) -> Self::Output {
 
         let style = style_sheet.active();
@@ -60,7 +61,7 @@ impl<B: Backend + BackendWithText> hexview::Renderer for Renderer<B> {
             border_width: 0,
             border_color: Color::BLACK,
         };
-        let line_count = (TEST_DATA.len() as f32 / column_count as f32).ceil() as usize;
+        let line_count = (data.len() as f32 / column_count as f32).ceil() as usize;
         let data_y = 10.0 + text_size + LINE_SPACING;
 
         let offset_width = text_width(self.backend(), HACK_BOLD, text_size, OFFSET_REFERENCE);
@@ -128,8 +129,8 @@ impl<B: Backend + BackendWithText> hexview::Renderer for Renderer<B> {
 
         let lines: Vec<Primitive> = (0..line_count).map(|i| {
             let lower_bound = column_count * i;
-            let upper_bound = (lower_bound + column_count).min(TEST_DATA.len());
-            let data_slice = &TEST_DATA[lower_bound..upper_bound];
+            let upper_bound = (lower_bound + column_count).min(data.len());
+            let data_slice = &data[lower_bound..upper_bound];
             let byte_count = data_slice.len();
             let bytes = data_slice
                 .iter()
@@ -144,9 +145,17 @@ impl<B: Backend + BackendWithText> hexview::Renderer for Renderer<B> {
 
                     acc
                 });
-            let ascii = std::str::from_utf8(data_slice)
-                .unwrap()
-                .into();
+            let ascii = data_slice
+                .iter()
+                .fold(String::new(), |mut acc, b| {
+                    if ASCII_RANGE.contains(b) {
+                        acc.push(*b as char);
+                    } else {
+                        acc.push('.');
+                    }
+
+                    acc
+                });
             let line_x = bounds_pos.0 + 10.0;
             let line_y = bounds_pos.1 + data_y + i as f32 * (text_size + LINE_SPACING);
 
