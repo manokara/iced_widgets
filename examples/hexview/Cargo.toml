@@ -1,0 +1,10 @@
+[package]
+name = "hexview"
+version = "0.1.0"
+authors = ["Mark Nokalt <marknokalt@live.com>"]
+edition = "2018"
+publish = false
+
+[dependencies]
+iced = { path = "../../iced" }
+iced_widgets = { path = "../../" }

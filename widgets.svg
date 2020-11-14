@@ -9,7 +9,7 @@
    xmlns:inkscape="http://www.inkscape.org/namespaces/inkscape"
    width="32"
    height="32"
-   viewBox="0 0 8.4666665 8.466667"
+   viewBox="0 0 32 32"
    version="1.1"
    id="svg8"
    inkscape:version="1.0.1 (3bc2e813f5, 2020-09-07)"
@@ -24,10 +24,10 @@
      inkscape:pageopacity="0.0"
      inkscape:pageshadow="2"
      inkscape:zoom="1"
-     inkscape:cx="442.61491"
-     inkscape:cy="245.84236"
+     inkscape:cx="803.01055"
+     inkscape:cy="356.43343"
      inkscape:document-units="px"
-     inkscape:current-layer="layer1"
+     inkscape:current-layer="g1187"
      showgrid="false"
      units="px"
      inkscape:window-width="1920"
@@ -38,7 +38,7 @@
      inkscape:document-rotation="0"
      showguides="true"
      inkscape:guide-bbox="true"
-     inkscape:snap-global="false"
+     inkscape:snap-global="true"
      inkscape:snap-bbox="true"
      inkscape:snap-bbox-edge-midpoints="true"
      inkscape:bbox-paths="false"
@@ -48,7 +48,10 @@
      fit-margin-top="32"
      fit-margin-bottom="32"
      showborder="true"
-     inkscape:showpageshadow="false" />
+     inkscape:showpageshadow="false"
+     inkscape:snap-smooth-nodes="true"
+     inkscape:object-paths="true"
+     scale-x="1" />
   <metadata
      id="metadata5">
     <rdf:RDF>
@@ -68,29 +71,29 @@
      transform="translate(-2.0781258e-8,1.0583332)">
     <text
        xml:space="preserve"
-       style="font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;font-size:3.52777px;line-height:0;font-family:sans-serif;-inkscape-font-specification:sans-serif;font-variant-ligatures:normal;font-variant-position:normal;font-variant-caps:normal;font-variant-numeric:normal;font-variant-alternates:normal;font-feature-settings:normal;text-indent:0;text-align:start;text-decoration:none;text-decoration-line:none;text-decoration-style:solid;text-decoration-color:#000000;letter-spacing:0px;word-spacing:0px;text-transform:none;writing-mode:lr-tb;direction:ltr;text-orientation:mixed;dominant-baseline:auto;baseline-shift:baseline;text-anchor:start;white-space:normal;shape-padding:0;opacity:1;vector-effect:none;fill:#000000;fill-opacity:1;stroke:none;stroke-width:0.264583px;stroke-linecap:butt;stroke-linejoin:miter;stroke-miterlimit:4;stroke-dasharray:none;stroke-dashoffset:0;stroke-opacity:1"
-       x="1.1953163"
-       y="-13.233289"
+       style="font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;font-size:13.3335px;line-height:0;font-family:sans-serif;-inkscape-font-specification:sans-serif;font-variant-ligatures:normal;font-variant-position:normal;font-variant-caps:normal;font-variant-numeric:normal;font-variant-alternates:normal;font-feature-settings:normal;text-indent:0;text-align:start;text-decoration:none;text-decoration-line:none;text-decoration-style:solid;text-decoration-color:#000000;letter-spacing:0px;word-spacing:0px;text-transform:none;writing-mode:lr-tb;direction:ltr;text-orientation:mixed;dominant-baseline:auto;baseline-shift:baseline;text-anchor:start;white-space:normal;shape-padding:0;opacity:1;vector-effect:none;fill:#000000;fill-opacity:1;stroke:none;stroke-width:1.00001px;stroke-linecap:butt;stroke-linejoin:miter;stroke-miterlimit:4;stroke-dasharray:none;stroke-dashoffset:0;stroke-opacity:1"
+       x="3.5180695"
+       y="-48.075375"
        id="text1673"
        inkscape:label="font info"><tspan
          sodipodi:role="line"
          id="tspan1671"
-         x="1.1953163"
-         y="-13.233289"
-         style="font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;line-height:4.93889px;font-family:sans-serif;-inkscape-font-specification:sans-serif;stroke-width:0.264583px">You need the following font families to properly view this document:</tspan><tspan
+         x="3.5180695"
+         y="-48.075375"
+         style="font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;line-height:18.6669px;font-family:sans-serif;-inkscape-font-specification:sans-serif;stroke-width:1.00001px">You need the following font families to properly view this document:</tspan><tspan
          sodipodi:role="line"
-         x="1.1953163"
-         y="-8.6471786"
-         style="font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;line-height:4.23333px;font-family:sans-serif;-inkscape-font-specification:sans-serif;stroke-width:0.264583px"
+         x="3.5180695"
+         y="-30.741823"
+         style="font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;line-height:16.0002px;font-family:sans-serif;-inkscape-font-specification:sans-serif;stroke-width:1.00001px"
          id="tspan1681">- Noto Sans</tspan><tspan
          sodipodi:role="line"
-         x="1.1953163"
-         y="-4.4138494"
-         style="font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;line-height:4.23333px;font-family:sans-serif;-inkscape-font-specification:sans-serif;stroke-width:0.264583px"
+         x="3.5180695"
+         y="-14.741623"
+         style="font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;line-height:16.0002px;font-family:sans-serif;-inkscape-font-specification:sans-serif;stroke-width:1.00001px"
          id="tspan1685">- Hack</tspan></text>
     <g
        id="g1081"
-       transform="translate(-11.498964,11.802616)"
+       transform="matrix(3.7795749,0,0,3.7795758,405.40281,46.549725)"
        inkscape:label="switch">
       <text
          xml:space="preserve"
@@ -433,7 +436,7 @@
     </g>
     <g
        id="g1089"
-       transform="matrix(0.96310394,0,0,0.96310392,-0.13270473,-0.05961806)"
+       transform="matrix(3.6401236,0,0,3.6401242,-0.50164294,2.716297)"
        inkscape:label="origin">
       <path
          style="opacity:1;vector-effect:none;fill:none;fill-opacity:1;fill-rule:evenodd;stroke:#000000;stroke-width:0.264583;stroke-linecap:butt;stroke-linejoin:miter;stroke-miterlimit:4;stroke-dasharray:none;stroke-dashoffset:0;stroke-opacity:1"
@@ -449,16 +452,16 @@
     <g
        id="g1187"
        inkscape:label="hexview"
-       transform="translate(0,3.7041668)">
+       transform="matrix(3.7795749,0,0,3.7795758,-0.99971837,15.941021)">
       <text
          xml:space="preserve"
          style="font-style:normal;font-variant:normal;font-weight:bold;font-stretch:condensed;font-size:7.22073px;line-height:7.22073px;font-family:'Noto Sans';-inkscape-font-specification:'Noto Sans Bold Condensed';font-variant-ligatures:normal;font-variant-position:normal;font-variant-caps:normal;font-variant-numeric:normal;font-variant-alternates:normal;font-feature-settings:normal;text-indent:0;text-align:start;text-decoration:none;text-decoration-line:none;text-decoration-style:solid;text-decoration-color:#000000;letter-spacing:0px;word-spacing:0px;text-transform:none;writing-mode:lr-tb;direction:ltr;text-orientation:mixed;dominant-baseline:auto;baseline-shift:baseline;text-anchor:start;white-space:normal;shape-padding:0;opacity:1;vector-effect:none;fill:#a03f3f;fill-opacity:1;stroke:none;stroke-width:0.541555px;stroke-linecap:butt;stroke-linejoin:miter;stroke-miterlimit:4;stroke-dasharray:none;stroke-dashoffset:0;stroke-opacity:1"
-         x="91.694679"
+         x="149.32141"
          y="12.903309"
          id="text1068"><tspan
            sodipodi:role="line"
            id="tspan1066"
-           x="91.694679"
+           x="149.32141"
            y="12.903309"
            style="font-style:normal;font-variant:normal;font-weight:bold;font-stretch:condensed;font-family:'Noto Sans';-inkscape-font-specification:'Noto Sans Bold Condensed';fill:#a03f3f;fill-opacity:1;stroke-width:0.541555px">Hexview</tspan></text>
       <g
@@ -853,9 +856,83 @@
       </g>
       <path
          style="opacity:1;vector-effect:none;fill:none;fill-opacity:1;fill-rule:evenodd;stroke:#a03f3f;stroke-width:0.264572;stroke-linecap:butt;stroke-linejoin:miter;stroke-miterlimit:4;stroke-dasharray:none;stroke-dashoffset:0;stroke-opacity:1"
-         d="M 87.40485,11.010147 H 9.9218697 V 302.55105 H 199.36355 V 10.71562 h -78.19769"
+         d="M 143.55707,11.010147 H 9.9218697 V 302.55105 H 314.8816 V 10.71562 H 181.11837"
          id="path1018-9"
          sodipodi:nodetypes="cccccc" />
+      <g
+         id="g1370">
+        <text
+           xml:space="preserve"
+           style="font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;font-size:3.52777px;line-height:4.9389px;font-family:'Noto Sans';-inkscape-font-specification:'Noto Sans';font-variant-ligatures:normal;font-variant-position:normal;font-variant-caps:normal;font-variant-numeric:normal;font-variant-alternates:normal;font-feature-settings:normal;text-indent:0;text-align:start;text-decoration:none;text-decoration-line:none;text-decoration-style:solid;text-decoration-color:#000000;letter-spacing:0px;word-spacing:0px;text-transform:none;writing-mode:lr-tb;direction:ltr;text-orientation:mixed;dominant-baseline:auto;baseline-shift:baseline;text-anchor:start;white-space:normal;shape-padding:0;opacity:1;vector-effect:none;fill:#000000;fill-opacity:1;stroke:none;stroke-width:0.264583px;stroke-linecap:butt;stroke-linejoin:miter;stroke-miterlimit:4;stroke-dasharray:none;stroke-dashoffset:0;stroke-opacity:1"
+           x="195.4882"
+           y="20.540062"
+           id="text1655-3"><tspan
+             sodipodi:role="line"
+             x="195.4882"
+             y="20.540062"
+             id="tspan1653-6"
+             style="stroke-width:0.264583px"><tspan
+               x="195.4882"
+               y="20.540062"
+               style="font-size:3.52777px;fill:#ac4141;fill-opacity:1;stroke-width:0.264583px"
+               id="tspan1651-7">Non-printable bytes</tspan></tspan></text>
+        <text
+           xml:space="preserve"
+           style="font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;font-size:3.52777px;line-height:5.64444px;font-family:Hack;-inkscape-font-specification:Hack;font-variant-ligatures:normal;font-variant-position:normal;font-variant-caps:normal;font-variant-numeric:normal;font-variant-alternates:normal;font-feature-settings:normal;text-indent:0;text-align:start;text-decoration:none;text-decoration-line:none;text-decoration-style:solid;text-decoration-color:#000000;letter-spacing:0px;word-spacing:0px;text-transform:none;writing-mode:lr-tb;direction:ltr;text-orientation:mixed;dominant-baseline:auto;baseline-shift:baseline;text-anchor:start;white-space:normal;shape-padding:0;opacity:1;vector-effect:none;fill:#323232;fill-opacity:1;stroke:none;stroke-width:0.264583px;stroke-linecap:butt;stroke-linejoin:miter;stroke-miterlimit:4;stroke-dasharray:none;stroke-dashoffset:0;stroke-opacity:1"
+           x="195.46713"
+           y="26.849518"
+           id="text881-5"><tspan
+             sodipodi:role="line"
+             x="195.46713"
+             y="26.849518"
+             style="font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;font-family:Hack;-inkscape-font-specification:Hack;fill:#323232;fill-opacity:1;stroke-width:0.264583px"
+             id="tspan1058-7">4C <tspan
+   style="fill:#a3a3a3;fill-opacity:1"
+   id="tspan1564">FF</tspan> 72 65 <tspan
+   style="fill:#a3a3a3;fill-opacity:1"
+   id="tspan1083">00 00</tspan> 69</tspan></text>
+      </g>
+      <g
+         id="g1384"
+         transform="translate(0,143.32522)">
+        <text
+           xml:space="preserve"
+           style="font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;font-size:3.52777px;line-height:4.9389px;font-family:'Noto Sans';-inkscape-font-specification:'Noto Sans';font-variant-ligatures:normal;font-variant-position:normal;font-variant-caps:normal;font-variant-numeric:normal;font-variant-alternates:normal;font-feature-settings:normal;text-indent:0;text-align:start;text-decoration:none;text-decoration-line:none;text-decoration-style:solid;text-decoration-color:#000000;letter-spacing:0px;word-spacing:0px;text-transform:none;writing-mode:lr-tb;direction:ltr;text-orientation:mixed;dominant-baseline:auto;baseline-shift:baseline;text-anchor:start;white-space:normal;shape-padding:0;opacity:1;vector-effect:none;fill:#000000;fill-opacity:1;stroke:none;stroke-width:0.264583px;stroke-linecap:butt;stroke-linejoin:miter;stroke-miterlimit:4;stroke-dasharray:none;stroke-dashoffset:0;stroke-opacity:1"
+           x="195.4882"
+           y="20.540062"
+           id="text1376"><tspan
+             sodipodi:role="line"
+             x="195.4882"
+             y="20.540062"
+             id="tspan1374"
+             style="stroke-width:0.264583px"><tspan
+               x="195.4882"
+               y="20.540062"
+               style="font-size:3.52777px;fill:#ac4141;fill-opacity:1;stroke-width:0.264583px"
+               id="tspan1372">Non-printable bytes</tspan></tspan></text>
+        <rect
+           style="fill:#2e3638;fill-opacity:1;stroke:none;stroke-width:0.264583;stroke-linecap:round;stroke-linejoin:round;paint-order:markers stroke fill"
+           id="rect1386"
+           width="46.965607"
+           height="5.6755505"
+           x="195.91713"
+           y="22.864933" />
+        <text
+           xml:space="preserve"
+           style="font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;font-size:3.52777px;line-height:5.64444px;font-family:Hack;-inkscape-font-specification:Hack;font-variant-ligatures:normal;font-variant-position:normal;font-variant-caps:normal;font-variant-numeric:normal;font-variant-alternates:normal;font-feature-settings:normal;text-indent:0;text-align:start;text-decoration:none;text-decoration-line:none;text-decoration-style:solid;text-decoration-color:#000000;letter-spacing:0px;word-spacing:0px;text-transform:none;writing-mode:lr-tb;direction:ltr;text-orientation:mixed;dominant-baseline:auto;baseline-shift:baseline;text-anchor:start;white-space:normal;shape-padding:0;opacity:1;vector-effect:none;fill:#778e8e;fill-opacity:1;stroke:none;stroke-width:0.264583px;stroke-linecap:butt;stroke-linejoin:miter;stroke-miterlimit:4;stroke-dasharray:none;stroke-dashoffset:0;stroke-opacity:1"
+           x="198.02895"
+           y="26.885572"
+           id="text1382"><tspan
+             sodipodi:role="line"
+             x="198.02895"
+             y="26.885572"
+             style="font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;font-family:Hack;-inkscape-font-specification:Hack;fill:#778e8e;fill-opacity:1;stroke-width:0.264583px"
+             id="tspan1380">4C <tspan
+   style="fill:#4e5e5e;fill-opacity:1"
+   id="tspan1558">FF</tspan> 72 65 <tspan
+   style="fill:#4e5e5e;fill-opacity:1"
+   id="tspan1378">00 00</tspan> 69</tspan></text>
+      </g>
     </g>
   </g>
 </svg>
