@@ -29,7 +29,7 @@ const HACK_BOLD: Font = Font::External {
 const HEX_CHARS: &[u8] = b"0123456789ABCDEF";
 const OFFSET_REFERENCE: &'static str = "00000000";
 const BYTE_COLUMNS: &'static str = "00 01 02 03 04 05 06 07 08 09 0A 0B 0C 0D 0E 0F";
-const LINE_SPACING: f32 = 9.0;
+const LINE_SPACING: f32 = 8.0;
 const LARGE_BOUNDS: Size<f32> = Size::new(640.0, 480.0);
 const ASCII_RANGE: Range<u8> = 32..128;
 
@@ -186,7 +186,7 @@ impl<B: Backend + BackendWithText> hexview::Renderer for Renderer<B> {
                             width: bytes_width,
                             height: text_size,
                         },
-                        color: style.offset_color,
+                        color: style.data_color,
                         size: text_size,
                         font: HACK_REGULAR,
                         horizontal_alignment: HorizontalAlignment::Left,
@@ -202,7 +202,7 @@ impl<B: Backend + BackendWithText> hexview::Renderer for Renderer<B> {
                             width: text_size * byte_count as f32,
                             height: text_size,
                         },
-                        color: style.offset_color,
+                        color: style.data_color,
                         size: text_size,
                         font: HACK_REGULAR,
                         horizontal_alignment: HorizontalAlignment::Left,

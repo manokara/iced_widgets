@@ -46,7 +46,7 @@ impl Dark {
         background_color: Color::from_rgb(0.18, 0.21, 0.22),
         line_color: Color::from_rgb(0.278, 0.33, 0.345),
         offset_color: Color::from_rgb(0.294, 0.372, 0.372),
-        data_color: Color::from_rgb(0.46, 0.556, 0.556),
+        data_color: Color::from_rgb(0.44, 0.53, 0.53),
         non_printable_color: Some(Color::from_rgb(0.27, 0.368, 0.368)),
     };
 }

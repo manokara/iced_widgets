@@ -5,6 +5,7 @@
    xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#"
    xmlns:svg="http://www.w3.org/2000/svg"
    xmlns="http://www.w3.org/2000/svg"
+   xmlns:xlink="http://www.w3.org/1999/xlink"
    xmlns:sodipodi="http://sodipodi.sourceforge.net/DTD/sodipodi-0.dtd"
    xmlns:inkscape="http://www.inkscape.org/namespaces/inkscape"
    width="32"
@@ -15,7 +16,12 @@
    inkscape:version="1.0.1 (3bc2e813f5, 2020-09-07)"
    sodipodi:docname="widgets.svg">
   <defs
-     id="defs2" />
+     id="defs2">
+    <color-profile
+       name="sRGB"
+       xlink:href="file:///usr/share/color/icc/colord/sRGB.icc"
+       id="color-profile1608" />
+  </defs>
   <sodipodi:namedview
      id="base"
      pagecolor="#ffffff"
@@ -24,8 +30,8 @@
      inkscape:pageopacity="0.0"
      inkscape:pageshadow="2"
      inkscape:zoom="1"
-     inkscape:cx="803.01055"
-     inkscape:cy="356.43343"
+     inkscape:cx="366.24696"
+     inkscape:cy="748.25993"
      inkscape:document-units="px"
      inkscape:current-layer="g1187"
      showgrid="false"
@@ -797,49 +803,49 @@
              sodipodi:nodetypes="cc" />
           <text
              xml:space="preserve"
-             style="font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;font-size:3.52777px;line-height:5.64444px;font-family:Hack;-inkscape-font-specification:Hack;font-variant-ligatures:normal;font-variant-position:normal;font-variant-caps:normal;font-variant-numeric:normal;font-variant-alternates:normal;font-feature-settings:normal;text-indent:0;text-align:start;text-decoration:none;text-decoration-line:none;text-decoration-style:solid;text-decoration-color:#000000;letter-spacing:0px;word-spacing:0px;text-transform:none;writing-mode:lr-tb;direction:ltr;text-orientation:mixed;dominant-baseline:auto;baseline-shift:baseline;text-anchor:start;white-space:normal;shape-padding:0;opacity:1;vector-effect:none;fill:#778e8e;fill-opacity:1;stroke:none;stroke-width:0.264583px;stroke-linecap:butt;stroke-linejoin:miter;stroke-miterlimit:4;stroke-dasharray:none;stroke-dashoffset:0;stroke-opacity:1"
+             style="font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;font-size:3.52777px;line-height:5.64444px;font-family:Hack;-inkscape-font-specification:Hack;font-variant-ligatures:normal;font-variant-position:normal;font-variant-caps:normal;font-variant-numeric:normal;font-variant-alternates:normal;font-feature-settings:normal;text-indent:0;text-align:start;text-decoration:none;text-decoration-line:none;text-decoration-style:solid;text-decoration-color:#000000;letter-spacing:0px;word-spacing:0px;text-transform:none;writing-mode:lr-tb;direction:ltr;text-orientation:mixed;dominant-baseline:auto;baseline-shift:baseline;text-anchor:start;white-space:normal;shape-padding:0;opacity:1;vector-effect:none;fill:#778e8e;fill-opacity:1;stroke:none;stroke-width:0.264583px;stroke-linecap:butt;stroke-linejoin:miter;stroke-miterlimit:4;stroke-dasharray:none;stroke-dashoffset:0;stroke-opacity:1;"
              x="154.87358"
              y="61.682362"
              id="text1317"><tspan
                sodipodi:role="line"
                x="154.87358"
                y="61.682362"
-               style="font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;font-family:Hack;-inkscape-font-specification:Hack;fill:#778e8e;fill-opacity:1;stroke-width:0.264583px"
+               style="font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;font-family:Hack;-inkscape-font-specification:Hack;fill:#778e8e;fill-opacity:1;stroke-width:0.264583px;"
                id="tspan1301">Lorem ipsum dolo</tspan><tspan
                sodipodi:role="line"
                x="154.87358"
                y="67.326805"
-               style="font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;font-family:Hack;-inkscape-font-specification:Hack;fill:#778e8e;fill-opacity:1;stroke-width:0.264583px"
+               style="font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;font-family:Hack;-inkscape-font-specification:Hack;fill:#778e8e;fill-opacity:1;stroke-width:0.264583px;"
                id="tspan1303">r sit amet, cons</tspan><tspan
                sodipodi:role="line"
                x="154.87358"
                y="72.971245"
-               style="font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;font-family:Hack;-inkscape-font-specification:Hack;fill:#778e8e;fill-opacity:1;stroke-width:0.264583px"
+               style="font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;font-family:Hack;-inkscape-font-specification:Hack;fill:#778e8e;fill-opacity:1;stroke-width:0.264583px;"
                id="tspan1305">ectetur adipisci</tspan><tspan
                sodipodi:role="line"
                x="154.87358"
                y="78.615685"
-               style="font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;font-family:Hack;-inkscape-font-specification:Hack;fill:#778e8e;fill-opacity:1;stroke-width:0.264583px"
+               style="font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;font-family:Hack;-inkscape-font-specification:Hack;fill:#778e8e;fill-opacity:1;stroke-width:0.264583px;"
                id="tspan1307">ng elit. Sed int</tspan><tspan
                sodipodi:role="line"
                x="154.87358"
                y="84.260124"
-               style="font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;font-family:Hack;-inkscape-font-specification:Hack;fill:#778e8e;fill-opacity:1;stroke-width:0.264583px"
+               style="font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;font-family:Hack;-inkscape-font-specification:Hack;fill:#778e8e;fill-opacity:1;stroke-width:0.264583px;"
                id="tspan1309">erdum massa inte</tspan><tspan
                sodipodi:role="line"
                x="154.87358"
                y="89.904564"
-               style="font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;font-family:Hack;-inkscape-font-specification:Hack;fill:#778e8e;fill-opacity:1;stroke-width:0.264583px"
+               style="font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;font-family:Hack;-inkscape-font-specification:Hack;fill:#778e8e;fill-opacity:1;stroke-width:0.264583px;"
                id="tspan1311">rdum gravida gra</tspan><tspan
                sodipodi:role="line"
                x="154.87358"
                y="95.549004"
-               style="font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;font-family:Hack;-inkscape-font-specification:Hack;fill:#778e8e;fill-opacity:1;stroke-width:0.264583px"
+               style="font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;font-family:Hack;-inkscape-font-specification:Hack;fill:#778e8e;fill-opacity:1;stroke-width:0.264583px;"
                id="tspan1313">vida. Nam ullamc</tspan><tspan
                sodipodi:role="line"
                x="154.87358"
                y="101.19344"
-               style="font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;font-family:Hack;-inkscape-font-specification:Hack;fill:#778e8e;fill-opacity:1;stroke-width:0.264583px"
+               style="font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;font-family:Hack;-inkscape-font-specification:Hack;fill:#778e8e;fill-opacity:1;stroke-width:0.264583px;"
                id="tspan1315">orper.</tspan></text>
         </g>
         <text
