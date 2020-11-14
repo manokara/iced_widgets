@@ -1,6 +1,6 @@
 use iced::{
-    radio, slider,
-    Column, Container, Element, Length, Radio, Row, Sandbox,
+    slider,
+    Align, Column, Container, Element, Length, Radio, Row, Sandbox,
     Settings, Slider, Text, VerticalAlignment,
 };
 use iced_widgets::{
@@ -81,6 +81,7 @@ impl Sandbox for App {
             light_radio.into(),
             dark_radio.into(),
         ])
+            .align_items(Align::Center)
             .spacing(12)
             .padding(8);
 
