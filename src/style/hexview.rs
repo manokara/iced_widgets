@@ -19,6 +19,8 @@ pub struct Style {
     pub data_color: Color,
     /// Color for non-printable bytes.
     pub non_printable_color: Option<Color>,
+    /// Color for the cursor
+    pub cursor_color: Color,
 }
 
 /// A set of styles for an [`Hexview`]
@@ -38,6 +40,7 @@ impl Light {
         offset_color: Color::from_rgb(0.33, 0.33, 0.33),
         data_color: Color::from_rgb(0.196, 0.196, 0.196),
         non_printable_color: Some(Color::from_rgb(0.64, 0.64, 0.64)),
+        cursor_color: Color::from_rgb(0.63, 0.63, 0.63),
     };
 }
 
@@ -48,6 +51,7 @@ impl Dark {
         offset_color: Color::from_rgb(0.294, 0.372, 0.372),
         data_color: Color::from_rgb(0.44, 0.53, 0.53),
         non_printable_color: Some(Color::from_rgb(0.27, 0.368, 0.368)),
+        cursor_color: Color::from_rgb(0.15, 0.38, 0.44),
     };
 }
 

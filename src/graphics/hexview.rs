@@ -1,7 +1,8 @@
 use std::ops::Range;
 use iced_graphics::{
+    triangle::{Mesh2D, Vertex2D},
     Backend, Font, HorizontalAlignment, VerticalAlignment,
-    Primitive, Size, Renderer, backend::Text as BackendWithText,
+    Primitive, Size, Vector, Renderer, backend::Text as BackendWithText,
 };
 use iced_native::{mouse, Background, Color, Point, Rectangle};
 use crate::native::hexview;
@@ -26,6 +27,27 @@ const HACK_BOLD: Font = Font::External {
     bytes: load_font!("hack-bold.ttf"),
 };
 
+const CURSOR_MESH: (&[Vertex2D], &[u32]) = (&[
+    Vertex2D { position: [0.0, 0.0], color: [1.0, 1.0, 1.0, 1.0] },
+    Vertex2D { position: [2.0, 0.0], color: [1.0, 1.0, 1.0, 1.0] },
+    Vertex2D { position: [0.0, 6.0], color: [1.0, 1.0, 1.0, 1.0] },
+    Vertex2D { position: [2.0, 6.0], color: [1.0, 1.0, 1.0, 1.0] },
+    Vertex2D { position: [2.0, 4.0], color: [1.0, 1.0, 1.0, 1.0] },
+    Vertex2D { position: [24.0, 4.0], color: [1.0, 1.0, 1.0, 1.0] },
+    Vertex2D { position: [24.0, 6.0], color: [1.0, 1.0, 1.0, 1.0] },
+    Vertex2D { position: [24.0, 0.0], color: [1.0, 1.0, 1.0, 1.0] },
+    Vertex2D { position: [26.0, 0.0], color: [1.0, 1.0, 1.0, 1.0] },
+    Vertex2D { position: [26.0, 6.0], color: [1.0, 1.0, 1.0, 1.0] },
+], &[
+    0, 1, 3,
+    0, 2, 3,
+    4, 5, 6,
+    4, 3, 6,
+    7, 8, 9,
+    7, 6, 9,
+]);
+
+
 const HEX_CHARS: &[u8] = b"0123456789ABCDEF";
 const OFFSET_REFERENCE: &'static str = "00000000";
 const BYTE_COLUMNS: &'static str = "00 01 02 03 04 05 06 07 08 09 0A 0B 0C 0D 0E 0F";
@@ -43,6 +65,9 @@ impl<B: Backend + BackendWithText> hexview::Renderer for Renderer<B> {
         style_sheet: &Self::Style,
         text_size: f32,
         column_count: usize,
+        keyboard_focus: bool,
+        cursor: usize,
+        test_offset: f32,
         data: &[u8],
     ) -> Self::Output {
 
@@ -283,14 +308,77 @@ impl<B: Backend + BackendWithText> hexview::Renderer for Renderer<B> {
             }
         }).collect();
 
+        let line = cursor / column_count;
+        let line_offset = cursor % column_count;
+        let line_str = linegroup_bytes_str(&lines[line]);
+
+        let byte_offset = text_width(
+            self.backend(),
+            HACK_REGULAR,
+            text_size,
+            &line_str[0..(line_offset * 3)],
+        );
+
+        let cursor_mesh_pos = [
+            right_of_offset + 17.0 + byte_offset - 2.0,
+            10.0 + text_size + LINE_SPACING + 12.0 + ((text_size + LINE_SPACING) * (cursor / column_count) as f32),
+        ];
+
+        let cursor_mesh = Mesh2D {
+            vertices: CURSOR_MESH.0.iter().map(|v| {
+                Vertex2D {
+                    position: v.position,
+                    color: style.cursor_color.into_linear(),
+                }
+            }).collect::<Vec<_>>(),
+            indices: CURSOR_MESH.1.to_vec(),
+        };
+
+        let cursor_prim = Primitive::Translate {
+            translation: Vector::new(bounds_pos.0, bounds_pos.1) + cursor_mesh_pos.into(),
+            content: Box::new(Primitive::Mesh2D {
+                buffers: cursor_mesh,
+                size: Size::new(
+                    CURSOR_MESH.0[9].position[0],
+                    CURSOR_MESH.0[9].position[1],
+                ),
+            }),
+        };
+
+        let debug_text = format!(
+            "text_size: {}\n\
+             keyboard_focus: {}\n\
+             cursor: {}\n\
+             cursor_position: ({}, {})\n\
+             bytes length: {}\n\
+             byte_offset: {}\n\
+             test_offset: {}\n\
+             bounds: ({}, {}) {}x{}",
+            text_size, keyboard_focus, cursor,
+            cursor_mesh_pos[0], cursor_mesh_pos[1],
+            data.len(), byte_offset, test_offset,
+            bounds_pos.0, bounds_pos.1, bounds_size.0,
+            bounds_size.1,
+        );
+
+        let debug_line_count = debug_text
+            .chars()
+            .fold(1, |mut acc, c| {
+                if c == '\n' {
+                    acc += 1;
+                }
+
+                acc
+            });
+
         let debug_info = group(vec![
             Primitive::Text {
-                content: format!("text_size: {}", text_size),
+                content: debug_text,
                 bounds: Rectangle {
                     x: bounds_pos.0 + right_of_bytes + 20.0,
                     y: bounds_pos.1 + data_y + line_count as f32 * (text_size + LINE_SPACING),
                     width: 400.0,
-                    height: text_size,
+                    height: text_size * debug_line_count as f32,
                 },
                 color: Color::from_rgb(1.0, 0.0, 0.0),
                 size: text_size,
@@ -308,6 +396,7 @@ impl<B: Backend + BackendWithText> hexview::Renderer for Renderer<B> {
                 byte_columns,
                 ascii_columns,
                 group(lines),
+                cursor_prim,
                 debug_info,
             ]),
             mouse::Interaction::default(),
@@ -323,4 +412,16 @@ fn group(primitives: Vec<Primitive>) -> Primitive {
 
 fn text_width<B: BackendWithText>(backend: &B, font: Font, size: f32, text: &str) -> f32 {
     backend.measure(text, size, font, LARGE_BOUNDS).0
+}
+
+fn linegroup_bytes_str(group: &Primitive) -> &str {
+    if let Primitive::Group { primitives } = group {
+        if let Primitive::Text { content, .. } = &primitives[1] {
+            content
+        } else {
+            unreachable!();
+        }
+    } else {
+        unreachable!();
+    }
 }

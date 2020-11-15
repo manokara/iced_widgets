@@ -1,6 +1,7 @@
 use iced_native::{
-    keyboard, layout, Clipboard, Element, Event, Hasher, Layout, Length, Point, Rectangle, Size,
-    Widget,
+    keyboard, layout, mouse,
+    Clipboard, Element, Event, Hasher, Layout, Length,
+    Point, Rectangle, Size, Widget,
 };
 use std::{
     hash::Hash,
@@ -23,6 +24,8 @@ pub struct State {
     text_size: f32,
     column_count: usize,
     changed_bytes: bool,
+    keyboard_focus: bool,
+    test_offset: f32,
 }
 
 pub trait Renderer: iced_native::Renderer {
@@ -35,6 +38,9 @@ pub trait Renderer: iced_native::Renderer {
         style: &Self::Style,
         text_size: f32,
         column_count: usize,
+        keyboard_focus: bool,
+        cursor: usize,
+        test_offset: f32,
         data: &[u8],
     ) -> Self::Output;
 }
@@ -63,11 +69,14 @@ impl State {
             text_size: 17.0,
             column_count: 16,
             changed_bytes: false,
+            keyboard_focus: false,
+            test_offset: 0.0,
         }
     }
     pub fn set_bytes(&mut self, bytes: &[u8]) {
         self.bytes = bytes.to_vec();
         self.changed_bytes = true;
+        self.cursor = 0;
     }
 
     pub fn set_column_count(&mut self, count: usize) {
@@ -76,6 +85,10 @@ impl State {
 
     pub fn set_text_size(&mut self, size: f32) {
         self.text_size = size.max(10.0);
+    }
+
+    pub fn set_keyboard_focus(&mut self, focus: bool) {
+        self.keyboard_focus = focus;
     }
 }
 
@@ -105,13 +118,74 @@ where
 
     fn on_event(
         &mut self,
-        _event: Event,
-        _layout: Layout<'_>,
-        _cursor_position: Point,
+        event: Event,
+        layout: Layout<'_>,
+        cursor_position: Point,
         _messages: &mut Vec<Message>,
         _renderer: &Renderer,
         _clipboard: Option<&dyn Clipboard>,
     ) {
+        use keyboard::{Event as KeyboardEvent, KeyCode};
+        use mouse::{Button as MouseButton, Event as MouseEvent};
+
+        let bytes_len = self.state.bytes.len();
+        let column_count = self.state.column_count;
+        let cursor = self.state.cursor;
+        let keyboard_focus = self.state.keyboard_focus;
+        let test_offset = self.state.test_offset;
+
+        match event {
+            Event::Mouse(MouseEvent::ButtonReleased(MouseButton::Left)) => {
+                self.state.set_keyboard_focus(layout.bounds().contains(cursor_position));
+            }
+
+            Event::Keyboard(KeyboardEvent::KeyPressed { key_code, .. }) => {
+                let line_start = cursor / column_count * column_count;
+                let line_end = (line_start + column_count - 1).min(bytes_len - 1);
+                let cursor_guard_left = cursor > 0 && keyboard_focus;
+                let cursor_guard_right = if bytes_len > 0 {
+                    self.state.cursor < bytes_len - 1 && keyboard_focus
+                } else {
+                    false
+                };
+                let cursor_guard_up = cursor >= column_count && keyboard_focus;
+                let cursor_guard_down = bytes_len > 0 && keyboard_focus;
+                let cursor_guard_home = cursor > line_start && keyboard_focus;
+                let cursor_guard_end = cursor < line_end && keyboard_focus;
+                let cursor_guard_pageup = cursor > 0 && keyboard_focus;
+                let cursor_guard_pagedown = bytes_len > 0 && keyboard_focus;
+
+                match key_code {
+                    // Cursor movement
+                    KeyCode::Left if cursor_guard_left => self.state.cursor -= 1,
+                    KeyCode::Right if cursor_guard_right => self.state.cursor += 1,
+                    KeyCode::Up if cursor_guard_up => self.state.cursor -= column_count,
+                    KeyCode::Down if cursor_guard_down => {
+                        if cursor + column_count <= bytes_len - 1 {
+                            self.state.cursor += column_count;
+                        } else {
+                            self.state.cursor = bytes_len - 1;
+                        }
+                    },
+                    KeyCode::Home if cursor_guard_home => self.state.cursor = line_start,
+                    KeyCode::End if cursor_guard_end => self.state.cursor = line_end,
+                    // TODO: Calculate pages based on visible lines
+                    KeyCode::PageUp if cursor_guard_pageup => self.state.cursor = 0,
+                    KeyCode::PageDown if cursor_guard_pagedown => {
+                        if bytes_len > 0 {
+                            self.state.cursor = bytes_len - 1;
+                        }
+                    },
+
+                    // Test offset
+                    KeyCode::Minus if test_offset > f32::MIN => self.state.test_offset -= 0.01,
+                    KeyCode::Equals if test_offset < f32::MAX => self.state.test_offset += 0.01,
+                    _ => (),
+                }
+            }
+
+            _ => (),
+        }
     }
 
     fn draw(
@@ -128,6 +202,9 @@ where
             &self.style,
             self.state.text_size,
             self.state.column_count.max(1),
+            self.state.keyboard_focus,
+            self.state.cursor,
+            self.state.test_offset,
             &self.state.bytes,
         )
     }
