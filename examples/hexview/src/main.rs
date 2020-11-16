@@ -1,6 +1,6 @@
 use iced::{
     pick_list, scrollable, slider,
-    Align, Column, Container, Element, Length, PickList,
+    Align, Checkbox, Column, Container, Font, Element, Length, PickList,
     Radio, Row, Sandbox, Scrollable, Settings, Slider,
     Text,
 };
@@ -13,11 +13,30 @@ macro_rules! load_data {
     ($p:expr) => {
         include_bytes!(concat!(
             env!("CARGO_MANIFEST_DIR"),
-            "/../../data/examples/",
+            "/data/",
             $p,
         ))
     };
 }
+
+const NOTO_REGULAR: Font = Font::External {
+    name: "Noto Regular",
+    bytes: load_data!("fonts/noto-regular.ttf"),
+};
+
+const NOTO_BOLD: Font = Font::External {
+    name: "Noto Bold",
+    bytes: load_data!("fonts/noto-bold.ttf"),
+};
+
+const HACK_REGULAR: Font = Font::External {
+    name: "Hack Regular",
+    bytes: load_data!("fonts/hack-regular.ttf"),
+};
+const HACK_BOLD: Font = Font::External {
+    name: "Hack Bold",
+    bytes: load_data!("fonts/hack-bold.ttf"),
+};
 
 const LOREM_IPSUM: &[u8] = b"Lorem ipsum dolor sit amet, consectetur adipiscing elit. Sed \
                              interdum massa interdum gravida gravida. Nam ullamcorper.";
@@ -28,12 +47,19 @@ const SAMPLE_OPTIONS: &[&'static str] = &[
     "TGA Image",
     "PNG Image",
 ];
+const FONT_OPTIONS: &[&'static str] = &[
+    "Default",
+    "Noto Sans",
+    "Hack",
+];
 
 #[derive(Debug, Clone)]
 pub enum Message {
     ColumnCount(usize),
     ThemeSelected(Theme),
     ContentSelected(&'static str),
+    FontSelected(&'static str),
+    HighlightNonPrintable(bool),
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -49,10 +75,20 @@ pub fn main() {
 pub struct App {
     hexview_theme: Theme,
     content_name: &'static str,
+    font_name: &'static str,
+    hexview_fonts: (Font, Font),
+    highlight_np: bool,
     hexview: hexview::State,
     column_slider: slider::State,
     content_list: pick_list::State<&'static str>,
     scrollable: scrollable::State,
+    font_list: pick_list::State<&'static str>,
+}
+
+pub struct HexviewTheme {
+    base: Theme,
+    highlight_np: bool,
+    hexview_fonts: (Font, Font),
 }
 
 impl Sandbox for App {
@@ -66,9 +102,13 @@ impl Sandbox for App {
             hexview,
             hexview_theme: Theme::Light,
             content_name: "Lorem Ipsum",
+            font_name: "Default",
+            hexview_fonts: (Font::Default, Font::Default),
+            highlight_np: true,
             column_slider: slider::State::new(),
             content_list: pick_list::State::default(),
             scrollable: scrollable::State::new(),
+            font_list: pick_list::State::default(),
         }
     }
 
@@ -90,6 +130,19 @@ impl Sandbox for App {
 
                 self.content_name = name;
             },
+            Message::FontSelected(name) => {
+                match name {
+                    "Default" => self.hexview_fonts = (Font::Default, Font::Default),
+                    "Noto Sans" => self.hexview_fonts = (NOTO_REGULAR, NOTO_BOLD),
+                    "Hack" => self.hexview_fonts = (HACK_REGULAR, HACK_BOLD),
+                    _ => (),
+                }
+
+                self.font_name = name;
+            }
+            Message::HighlightNonPrintable(b) => {
+                self.highlight_np = b;
+            }
         }
     }
 
@@ -122,20 +175,36 @@ impl Sandbox for App {
             Message::ContentSelected,
         );
 
+        let font_list = PickList::new(
+            &mut self.font_list,
+            FONT_OPTIONS,
+            Some(self.font_name),
+            Message::FontSelected,
+        );
+
+        let highlight_ckb = Checkbox::new(
+            self.highlight_np,
+            "Highlight non-printable",
+            Message::HighlightNonPrintable
+        );
+
         let row = Row::with_children(vec![
             Text::new("Column Count:").into(),
             column_slider.into(),
             Text::new("Theme:").into(),
             light_radio.into(),
             dark_radio.into(),
+            Text::new("Font:").into(),
+            font_list.into(),
             Text::new("Content:").into(),
             content_list.into(),
+            highlight_ckb.into(),
         ])
             .align_items(Align::Center)
             .spacing(12)
             .padding(8);
 
-        let hexview_theme: Box<dyn hexview_style::StyleSheet> = self.hexview_theme.into();
+        let hexview_theme = modify_theme(self.hexview_theme, self.highlight_np, self.hexview_fonts);
         let hexview = hexview::Hexview::new(&mut self.hexview)
             .style(hexview_theme);
         let scrollable = Scrollable::new(&mut self.scrollable)
@@ -150,11 +219,38 @@ impl Sandbox for App {
     }
 }
 
+fn modify_theme(base: Theme, highlight_np: bool, hexview_fonts: (Font, Font)) -> HexviewTheme {
+    HexviewTheme {
+        base,
+        highlight_np,
+        hexview_fonts,
+    }
+}
+
 impl Into<Box<dyn hexview_style::StyleSheet>> for Theme {
     fn into(self) -> Box<dyn hexview_style::StyleSheet> {
         match self {
             Theme::Light => Box::new(hexview_style::Light),
             Theme::Dark => Box::new(hexview_style::Dark),
+        }
+    }
+}
+
+impl hexview_style::StyleSheet for HexviewTheme {
+    fn active(&self) -> hexview_style::Style {
+        let base: Box<dyn hexview_style::StyleSheet> = self.base.into();
+        let active = base.active();
+        let non_printable_color = if self.highlight_np {
+           active.non_printable_color
+        } else {
+            None
+        };
+
+        hexview_style::Style {
+            non_printable_color,
+            data_font: self.hexview_fonts.0,
+            header_font: self.hexview_fonts.1,
+            .. active
         }
     }
 }

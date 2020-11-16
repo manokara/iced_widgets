@@ -1,7 +1,7 @@
 //! Style for the [`Hexview`] widget.
 //!
 //! [`Hexview`]: ../native/hexview/struct.Hexview.html
-use iced_native::Color;
+use iced_native::{Color, Font};
 //use crate::style::default_colors;
 
 /// The apperance of an [`Hexview`].
@@ -21,6 +21,10 @@ pub struct Style {
     pub non_printable_color: Option<Color>,
     /// Color for the cursor
     pub cursor_color: Color,
+    /// Font for column headers and offsets
+    pub header_font: Font,
+    /// Font for bytes and ascii
+    pub data_font: Font,
 }
 
 /// A set of styles for an [`Hexview`]
@@ -41,6 +45,8 @@ impl Light {
         data_color: Color::from_rgb(0.196, 0.196, 0.196),
         non_printable_color: Some(Color::from_rgb(0.64, 0.64, 0.64)),
         cursor_color: Color::from_rgb(0.63, 0.63, 0.63),
+        header_font: Font::Default,
+        data_font: Font::Default,
     };
 }
 
@@ -52,6 +58,8 @@ impl Dark {
         data_color: Color::from_rgb(0.44, 0.53, 0.53),
         non_printable_color: Some(Color::from_rgb(0.27, 0.368, 0.368)),
         cursor_color: Color::from_rgb(0.15, 0.38, 0.44),
+        header_font: Font::Default,
+        data_font: Font::Default,
     };
 }
 

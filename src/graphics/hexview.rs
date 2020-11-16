@@ -8,25 +8,6 @@ use iced_native::{mouse, Background, Color, Point, Rectangle};
 use crate::native::hexview;
 pub use crate::style::hexview::{Style, StyleSheet};
 
-macro_rules! load_font {
-    ($p:expr) => {
-        include_bytes!(concat!(
-            env!("CARGO_MANIFEST_DIR"),
-            "/data/fonts/",
-            $p,
-        ))
-    };
-}
-
-const HACK_REGULAR: Font = Font::External {
-    name: "Hack Regular",
-    bytes: load_font!("hack-regular.ttf"),
-};
-const HACK_BOLD: Font = Font::External {
-    name: "Hack Bold",
-    bytes: load_font!("hack-bold.ttf"),
-};
-
 const CURSOR_MESH: (&[Vertex2D], &[u32]) = (&[
     Vertex2D { position: [0.0, 0.0], color: [1.0, 1.0, 1.0, 1.0] },
     Vertex2D { position: [2.0, 0.0], color: [1.0, 1.0, 1.0, 1.0] },
@@ -47,13 +28,25 @@ const CURSOR_MESH: (&[Vertex2D], &[u32]) = (&[
     7, 6, 9,
 ]);
 
-
 const HEX_CHARS: &[u8] = b"0123456789ABCDEF";
 const OFFSET_REFERENCE: &'static str = "00000000";
-const BYTE_COLUMNS: &'static str = "00 01 02 03 04 05 06 07 08 09 0A 0B 0C 0D 0E 0F";
+const BYTES_HEADER: &'static str = "00 01 02 03 04 05 06 07 08 09 0A 0B 0C 0D 0E 0F";
 const LINE_SPACING: f32 = 8.0;
 const LARGE_BOUNDS: Size<f32> = Size::new(640.0, 480.0);
 const ASCII_RANGE: Range<u8> = 32..128;
+
+#[derive(Clone, Copy, Debug, Eq, PartialEq)]
+enum SpanType {
+    Printable,
+    NonPrintable,
+}
+
+#[derive(Clone, Copy, Debug)]
+struct LineSpan {
+    ty: SpanType,
+    start: usize,
+    end: usize,
+}
 
 impl<B: Backend + BackendWithText> hexview::Renderer for Renderer<B> {
     type Style = Box<dyn StyleSheet>;
@@ -89,10 +82,15 @@ impl<B: Backend + BackendWithText> hexview::Renderer for Renderer<B> {
         let line_count = (data.len() as f32 / column_count as f32).ceil() as usize;
         let data_y = 10.0 + text_size + LINE_SPACING;
 
-        let offset_width = text_width(self.backend(), HACK_BOLD, text_size, OFFSET_REFERENCE);
-        let bytes_width = text_width(self.backend(), HACK_BOLD, text_size, &BYTE_COLUMNS[..(column_count * 3 - 1)]);
+        let offset_width = text_width(self.backend(), style.header_font, text_size, OFFSET_REFERENCE);
+        let bytes_header_width = text_width(
+            self.backend(),
+            style.header_font,
+            text_size,
+            &BYTES_HEADER[..(column_count * 3 - 1)],
+        );
         let right_of_offset = 10.0 + offset_width;
-        let right_of_bytes = right_of_offset + 20.0 + bytes_width;
+        let right_of_bytes_header = right_of_offset + 20.0 + bytes_header_width;
 
         let offset_separator = Primitive::Quad {
             bounds: Rectangle {
@@ -107,121 +105,263 @@ impl<B: Backend + BackendWithText> hexview::Renderer for Renderer<B> {
             border_color: Color::BLACK,
         };
 
-        let bytes_separator = Primitive::Quad {
-            bounds: Rectangle {
-                x: bounds_pos.0 + right_of_bytes + 10.0,
-                y: bounds_pos.1 + 10.0,
-                width: 0.5,
-                height: bounds_size.1 - 20.0,
-            },
-            background: Background::Color(style.line_color),
-            border_radius: 0,
-            border_width: 0,
-            border_color: Color::BLACK,
-        };
-
-        let byte_columns = Primitive::Text {
-            content: BYTE_COLUMNS[0..(column_count as usize * 3 - 1)].into(),
+        let bytes_header = Primitive::Text {
+            content: BYTES_HEADER[0..(column_count as usize * 3 - 1)].into(),
             bounds: Rectangle {
                 x: bounds_pos.0 + right_of_offset + 20.0,
                 y: bounds_pos.1 + 10.0,
-                width: bytes_width,
+                width: bytes_header_width,
                 height: text_size,
             },
             color: style.offset_color,
             size: text_size,
-            font: HACK_BOLD,
+            font: style.header_font,
             horizontal_alignment: HorizontalAlignment::Left,
             vertical_alignment: VerticalAlignment::Top,
         };
 
         let ascii_hex_chars = std::str::from_utf8(&HEX_CHARS[0..column_count]).unwrap();
-        let ascii_width = text_width(self.backend(), HACK_BOLD, text_size, ascii_hex_chars);
-        let ascii_columns = Primitive::Text {
-            content: ascii_hex_chars.into(),
-            bounds: Rectangle {
-                x: bounds_pos.0 + right_of_bytes + 20.0,
-                y: bounds_pos.1 + 10.0,
-                width: ascii_width,
-                height: text_size,
-            },
-            color: style.offset_color,
-            size: text_size,
-            font: HACK_BOLD,
-            horizontal_alignment: HorizontalAlignment::Left,
-            vertical_alignment: VerticalAlignment::Top,
-        };
+        let ascii_width = text_width(self.backend(), style.header_font, text_size, ascii_hex_chars);
+        //let space_size = text_width(self.backend(), style.data_font, text_size, " ");
+        //let dot_size = text_width(self.backend(), style.data_font, text_size, ".");
+        let start_of_bytes = right_of_offset + 20.0;
+        let mut byte_buffers = Vec::new();
 
         let lines: Vec<Primitive> = (0..line_count).map(|i| {
             let lower_bound = column_count * i;
             let upper_bound = (lower_bound + column_count).min(data.len());
             let data_slice = &data[lower_bound..upper_bound];
-            let byte_count = data_slice.len();
-            let mut np_bytes = String::new();
-            let mut np_ascii = String::new();
-            let has_non_printable = data_slice.iter().any(|b| !ASCII_RANGE.contains(b));
+            let line_x = bounds_pos.0 + 10.0;
+            let line_y = bounds_pos.1 + data_y + i as f32 * (text_size + LINE_SPACING);
             let np_have_color = style.non_printable_color.is_some();
-            let bytes = data_slice
+
+            //let mut byte_buffer = String::new();
+            //let mut ascii_buffer = String::new();
+            let mut byte_spans = Vec::new();
+            let mut ascii_spans = Vec::new();
+            let mut np_control = false;
+            let mut printable_offset = 0;
+            let mut np_offset = 0;
+            let mut data_x = start_of_bytes;
+
+            // Generate hexpairs in spans that will be transformed to text later
+            let byte_buffer = data_slice
                 .iter()
                 .enumerate()
                 .fold(String::new(), |mut acc, (i, b)| {
+                    if ASCII_RANGE.contains(b) {
+                        // Update printable offset and generate non-printable span
+                        if np_control {
+                            printable_offset = acc.len();
+
+                            if printable_offset > 0 {
+                                let ty = if np_have_color {
+                                    SpanType::NonPrintable
+                                } else {
+                                    SpanType::Printable
+                                };
+
+                                byte_spans.push(LineSpan {
+                                    ty,
+                                    start: np_offset,
+                                    end: printable_offset,
+                                });
+                            }
+
+                            np_control = false;
+                        }
+                    } else {
+                        // Update non-printable offset and generate printable span
+                        if !np_control {
+                            np_offset = acc.len();
+
+                            if np_offset > 0 {
+                                byte_spans.push(LineSpan {
+                                    ty: SpanType::Printable,
+                                    start: printable_offset,
+                                    end: np_offset,
+                                });
+                            }
+
+                            np_control = true;
+                        }
+                    }
+
                     let high = HEX_CHARS[(b >> 4) as usize] as char;
                     let low = HEX_CHARS[(b & 0xF) as usize] as char;
 
-                    if ASCII_RANGE.contains(b) {
-                        acc.push(high);
-                        acc.push(low);
-
-                        if has_non_printable && np_have_color {
-                            np_bytes.push_str("  ");
-                        }
-                    } else {
-                        acc.push_str("  ");
-
-                        if np_have_color {
-                            np_bytes.push(high);
-                            np_bytes.push(low);
-                        } else {
-                            acc.push(high);
-                            acc.push(low);
-                        }
-                    }
+                    acc.push(high);
+                    acc.push(low);
 
                     if i != 15 {
                         acc.push(' ');
-
-                        if has_non_printable && np_have_color {
-                            np_bytes.push(' ');
-                        }
                     }
 
                     acc
                 });
-            let ascii = data_slice
+
+            // Add last span
+            let (start, ty) = if np_control {
+                (np_offset, if np_have_color {
+                    SpanType::NonPrintable
+                } else {
+                    SpanType::Printable
+                })
+            } else {
+                (printable_offset, SpanType::Printable)
+            };
+
+            byte_spans.push(LineSpan {
+                ty,
+                start,
+                end: byte_buffer.len(),
+            });
+
+            printable_offset = 0;
+            np_offset = 0;
+
+            // Generate the ASCII repesentation in spans that will be transformed to text later
+            let ascii_buffer = data_slice
                 .iter()
                 .fold(String::new(), |mut acc, b| {
                     if ASCII_RANGE.contains(b) {
-                        acc.push(*b as char);
+                        if np_control {
+                            printable_offset = acc.len();
 
-                        if has_non_printable && np_have_color {
-                            np_ascii.push(' ');
+                            if printable_offset > 0 {
+                                let ty = if np_have_color {
+                                    SpanType::NonPrintable
+                                } else {
+                                    SpanType::Printable
+                                };
+
+                                ascii_spans.push(LineSpan {
+                                    ty,
+                                    start: np_offset,
+                                    end: printable_offset,
+                                });
+                            }
+
+                            np_control = false;
                         }
+
+                        acc.push(*b as char);
                     } else {
-                        if np_have_color {
-                            acc.push(' ');
-                            np_ascii.push('.');
-                        } else {
-                            acc.push('.');
+                        if !np_control {
+                            np_offset = acc.len();
+
+                            if np_offset > 0 {
+                                ascii_spans.push(LineSpan {
+                                    ty: SpanType::Printable,
+                                    start: printable_offset,
+                                    end: np_offset,
+                                });
+                            }
+
+                            np_control = true;
                         }
+
+                        acc.push('.');
                     }
 
                     acc
                 });
 
-            let line_x = bounds_pos.0 + 10.0;
-            let line_y = bounds_pos.1 + data_y + i as f32 * (text_size + LINE_SPACING);
+            // Add last span
+            let (start, ty) = if np_control {
+                (np_offset, if np_have_color {
+                    SpanType::NonPrintable
+                } else {
+                    SpanType::Printable
+                })
+            } else {
+                (printable_offset, SpanType::Printable)
+            };
 
-            let mut primitives = vec![
+            ascii_spans.push(LineSpan {
+                ty,
+                start,
+                end: ascii_buffer.len(),
+            });
+
+            // Join spans with the same type
+            byte_spans.dedup_by(span_dedup);
+            ascii_spans.dedup_by(span_dedup);
+
+            let byte_prims = byte_spans
+                .iter()
+                .fold(Vec::new(), |mut acc, span| {
+                    let content = byte_buffer[span.start..span.end].to_string();
+                    let content_width = text_width(
+                        self.backend(),
+                        style.data_font,
+                        text_size,
+                        &content,
+                    );
+                    let color = match span.ty {
+                        SpanType::Printable => style.data_color,
+                        SpanType::NonPrintable => style.non_printable_color.unwrap(),
+                    };
+
+                    acc.push(Primitive::Text {
+                        content,
+                        color,
+                        bounds: Rectangle {
+                            x: bounds_pos.0 + data_x,
+                            y: line_y,
+                            width: content_width,
+                            height: text_size,
+                        },
+                        size: text_size,
+                        font: style.data_font,
+                        horizontal_alignment: HorizontalAlignment::Left,
+                        vertical_alignment: VerticalAlignment::Top,
+                    });
+
+                    data_x += content_width + test_offset;
+                    acc
+                });
+
+            data_x = right_of_bytes_header + 20.0;
+
+            let ascii_prims = ascii_spans
+                .iter()
+                .fold(Vec::new(), |mut acc, span| {
+                    let content = ascii_buffer[span.start..span.end].to_string();
+                    let content_width = text_width(
+                        self.backend(),
+                        style.data_font,
+                        text_size,
+                        &content,
+                    );
+                    let color = match span.ty {
+                        SpanType::Printable => style.data_color,
+                        SpanType::NonPrintable => style.non_printable_color.unwrap(),
+                    };
+
+                    acc.push(Primitive::Text {
+                        content,
+                        color,
+                        bounds: Rectangle {
+                            x: bounds_pos.0 + data_x,
+                            y: line_y,
+                            width: content_width,
+                            height: text_size,
+                        },
+                        size: text_size,
+                        font: style.data_font,
+                        horizontal_alignment: HorizontalAlignment::Left,
+                        vertical_alignment: VerticalAlignment::Top,
+                    });
+
+                    // FIXME: Why is the width over by one pixel?
+                    // This seems to happen all the example fonts in the demo.
+                    // The spans don't align without this.
+                    data_x += content_width + test_offset;
+                    acc
+                });
+
+            let primitives = vec![
                 // Offset
                 Primitive::Text {
                     content: format!("{:08X}", i * 16),
@@ -233,88 +373,57 @@ impl<B: Backend + BackendWithText> hexview::Renderer for Renderer<B> {
                     },
                     color: style.offset_color,
                     size: text_size,
-                    font: HACK_BOLD,
+                    font: style.header_font,
                     horizontal_alignment: HorizontalAlignment::Left,
                     vertical_alignment: VerticalAlignment::Top,
                 },
 
                 // Bytes
-                Primitive::Text {
-                    content: bytes,
-                    bounds: Rectangle {
-                        x: bounds_pos.0 + right_of_offset + 20.0,
-                        y: line_y,
-                        width: bytes_width,
-                        height: text_size,
-                    },
-                    color: style.data_color,
-                    size: text_size,
-                    font: HACK_REGULAR,
-                    horizontal_alignment: HorizontalAlignment::Left,
-                    vertical_alignment: VerticalAlignment::Top,
-                },
+                group(byte_prims),
 
                 // Ascii
-                Primitive::Text {
-                    content: ascii,
-                    bounds: Rectangle {
-                        x: bounds_pos.0 + right_of_bytes + 20.0,
-                        y: line_y,
-                        width: text_size * byte_count as f32,
-                        height: text_size,
-                    },
-                    color: style.data_color,
-                    size: text_size,
-                    font: HACK_REGULAR,
-                    horizontal_alignment: HorizontalAlignment::Left,
-                    vertical_alignment: VerticalAlignment::Top,
-                },
+                group(ascii_prims),
             ];
-            let non_printable_opt = |c| if has_non_printable { Some(c) } else { None };
 
-            if let Some(color) = style.non_printable_color.and_then(non_printable_opt) {
-                primitives.push(Primitive::Text {
-                    color,
-                    content: np_bytes,
-                    bounds: Rectangle {
-                        x: bounds_pos.0 + right_of_offset + 20.0,
-                        y: line_y,
-                        width: bytes_width,
-                        height: text_size,
-                    },
-                    size: text_size,
-                    font: HACK_REGULAR,
-                    horizontal_alignment: HorizontalAlignment::Left,
-                    vertical_alignment: VerticalAlignment::Top,
-                });
-                primitives.push(Primitive::Text {
-                    color,
-                    content: np_ascii,
-                    bounds: Rectangle {
-                        x: bounds_pos.0 + right_of_bytes + 20.0,
-                        y: line_y,
-                        width: text_size * byte_count as f32,
-                        height: text_size,
-                    },
-                    size: text_size,
-                    font: HACK_REGULAR,
-                    horizontal_alignment: HorizontalAlignment::Left,
-                    vertical_alignment: VerticalAlignment::Top,
-                });
-            }
-
-            Primitive::Group {
-                primitives,
-            }
+            byte_buffers.push(byte_buffer);
+            group(primitives)
         }).collect();
+
+        let bytes_separator = Primitive::Quad {
+            bounds: Rectangle {
+                x: bounds_pos.0 + right_of_bytes_header + 10.0,
+                y: bounds_pos.1 + 10.0,
+                width: 0.5,
+                height: bounds_size.1 - 20.0,
+            },
+            background: Background::Color(style.line_color),
+            border_radius: 0,
+            border_width: 0,
+            border_color: Color::BLACK,
+        };
+
+        let ascii_columns = Primitive::Text {
+            content: ascii_hex_chars.into(),
+            bounds: Rectangle {
+                x: bounds_pos.0 + right_of_bytes_header + 20.0,
+                y: bounds_pos.1 + 10.0,
+                width: ascii_width,
+                height: text_size,
+            },
+            color: style.offset_color,
+            size: text_size,
+            font: style.header_font,
+            horizontal_alignment: HorizontalAlignment::Left,
+            vertical_alignment: VerticalAlignment::Top,
+        };
 
         let line = cursor / column_count;
         let line_offset = cursor % column_count;
-        let line_str = linegroup_bytes_str(&lines[line]);
+        let line_str = &byte_buffers[line];
 
         let byte_offset = text_width(
             self.backend(),
-            HACK_REGULAR,
+            style.data_font,
             text_size,
             &line_str[0..(line_offset * 3)],
         );
@@ -375,14 +484,14 @@ impl<B: Backend + BackendWithText> hexview::Renderer for Renderer<B> {
             Primitive::Text {
                 content: debug_text,
                 bounds: Rectangle {
-                    x: bounds_pos.0 + right_of_bytes + 20.0,
+                    x: bounds_pos.0 + 10.0,
                     y: bounds_pos.1 + data_y + line_count as f32 * (text_size + LINE_SPACING),
                     width: 400.0,
                     height: text_size * debug_line_count as f32,
                 },
                 color: Color::from_rgb(1.0, 0.0, 0.0),
                 size: text_size,
-                font: HACK_REGULAR,
+                font: style.data_font,
                 horizontal_alignment: HorizontalAlignment::Left,
                 vertical_alignment: VerticalAlignment::Top,
             },
@@ -393,7 +502,7 @@ impl<B: Backend + BackendWithText> hexview::Renderer for Renderer<B> {
                 back,
                 offset_separator,
                 bytes_separator,
-                byte_columns,
+                bytes_header,
                 ascii_columns,
                 group(lines),
                 cursor_prim,
@@ -414,14 +523,11 @@ fn text_width<B: BackendWithText>(backend: &B, font: Font, size: f32, text: &str
     backend.measure(text, size, font, LARGE_BOUNDS).0
 }
 
-fn linegroup_bytes_str(group: &Primitive) -> &str {
-    if let Primitive::Group { primitives } = group {
-        if let Primitive::Text { content, .. } = &primitives[1] {
-            content
-        } else {
-            unreachable!();
-        }
+fn span_dedup(a: &mut LineSpan, b: &mut LineSpan) -> bool {
+    if a.ty == b.ty {
+        b.end = a.end;
+        true
     } else {
-        unreachable!();
+        false
     }
 }
