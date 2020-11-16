@@ -61,6 +61,7 @@ impl<B: Backend + BackendWithText> hexview::Renderer for Renderer<B> {
         keyboard_focus: bool,
         cursor: usize,
         test_offset: f32,
+        debug_enabled: bool,
         data: &[u8],
     ) -> Self::Output {
 
@@ -454,48 +455,52 @@ impl<B: Backend + BackendWithText> hexview::Renderer for Renderer<B> {
             }),
         };
 
-        let debug_text = format!(
-            "text_size: {}\n\
-             keyboard_focus: {}\n\
-             cursor: {}\n\
-             cursor_position: ({}, {})\n\
-             bytes length: {}\n\
-             byte_offset: {}\n\
-             test_offset: {}\n\
-             bounds: ({}, {}) {}x{}",
-            text_size, keyboard_focus, cursor,
-            cursor_mesh_pos[0], cursor_mesh_pos[1],
-            data.len(), byte_offset, test_offset,
-            bounds_pos.0, bounds_pos.1, bounds_size.0,
-            bounds_size.1,
-        );
+        let debug_info = if debug_enabled {
+            let debug_text = format!(
+                "text_size: {}\n\
+                keyboard_focus: {}\n\
+                cursor: {}\n\
+                cursor_position: ({}, {})\n\
+                bytes length: {}\n\
+                byte_offset: {}\n\
+                test_offset: {}\n\
+                bounds: ({}, {}) {}x{}",
+                text_size, keyboard_focus, cursor,
+                cursor_mesh_pos[0], cursor_mesh_pos[1],
+                data.len(), byte_offset, test_offset,
+                bounds_pos.0, bounds_pos.1, bounds_size.0,
+                bounds_size.1,
+            );
 
-        let debug_line_count = debug_text
-            .chars()
-            .fold(1, |mut acc, c| {
-                if c == '\n' {
-                    acc += 1;
-                }
+            let debug_line_count = debug_text
+                .chars()
+                .fold(1, |mut acc, c| {
+                    if c == '\n' {
+                        acc += 1;
+                    }
 
-                acc
-            });
+                    acc
+                });
 
-        let debug_info = group(vec![
-            Primitive::Text {
-                content: debug_text,
-                bounds: Rectangle {
-                    x: bounds_pos.0 + 10.0,
-                    y: bounds_pos.1 + data_y + line_count as f32 * (text_size + LINE_SPACING),
-                    width: 400.0,
-                    height: text_size * debug_line_count as f32,
+            group(vec![
+                Primitive::Text {
+                    content: debug_text,
+                    bounds: Rectangle {
+                        x: bounds_pos.0 + 10.0,
+                        y: bounds_pos.1 + data_y + line_count as f32 * (text_size + LINE_SPACING),
+                        width: 400.0,
+                        height: text_size * debug_line_count as f32,
+                    },
+                    color: Color::from_rgb(1.0, 0.0, 0.0),
+                    size: text_size,
+                    font: style.data_font,
+                    horizontal_alignment: HorizontalAlignment::Left,
+                    vertical_alignment: VerticalAlignment::Top,
                 },
-                color: Color::from_rgb(1.0, 0.0, 0.0),
-                size: text_size,
-                font: style.data_font,
-                horizontal_alignment: HorizontalAlignment::Left,
-                vertical_alignment: VerticalAlignment::Top,
-            },
-        ]);
+            ])
+        } else {
+            Primitive::None
+        };
 
         (
             group(vec![

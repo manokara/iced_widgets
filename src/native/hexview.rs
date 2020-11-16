@@ -26,6 +26,7 @@ pub struct State {
     changed_bytes: bool,
     keyboard_focus: bool,
     test_offset: f32,
+    debug_enabled: bool,
 }
 
 pub trait Renderer: iced_native::Renderer {
@@ -41,6 +42,7 @@ pub trait Renderer: iced_native::Renderer {
         keyboard_focus: bool,
         cursor: usize,
         test_offset: f32,
+        debug_enabled: bool,
         data: &[u8],
     ) -> Self::Output;
 }
@@ -71,6 +73,7 @@ impl State {
             changed_bytes: false,
             keyboard_focus: false,
             test_offset: 0.0,
+            debug_enabled: false,
         }
     }
     pub fn set_bytes(&mut self, bytes: &[u8]) {
@@ -133,6 +136,7 @@ where
         let cursor = self.state.cursor;
         let keyboard_focus = self.state.keyboard_focus;
         let test_offset = self.state.test_offset;
+        let debug_enabled = self.state.debug_enabled;
 
         match event {
             Event::Mouse(MouseEvent::ButtonReleased(MouseButton::Left)) => {
@@ -154,6 +158,8 @@ where
                 let cursor_guard_end = cursor < line_end && keyboard_focus;
                 let cursor_guard_pageup = cursor > 0 && keyboard_focus;
                 let cursor_guard_pagedown = bytes_len > 0 && keyboard_focus;
+                let test_offset_guard_left = test_offset > f32::MIN && debug_enabled;
+                let test_offset_guard_right = test_offset < f32::MAX && debug_enabled;
 
                 match key_code {
                     // Cursor movement
@@ -178,8 +184,12 @@ where
                     },
 
                     // Test offset
-                    KeyCode::Minus if test_offset > f32::MIN => self.state.test_offset -= 0.01,
-                    KeyCode::Equals if test_offset < f32::MAX => self.state.test_offset += 0.01,
+                    KeyCode::Minus if test_offset_guard_left => self.state.test_offset -= 0.01,
+                    KeyCode::Equals if test_offset_guard_right => self.state.test_offset += 0.01,
+
+                    // Debug
+                    KeyCode::D => self.state.debug_enabled = !debug_enabled,
+
                     _ => (),
                 }
             }
@@ -205,6 +215,7 @@ where
             self.state.keyboard_focus,
             self.state.cursor,
             self.state.test_offset,
+            self.state.debug_enabled,
             &self.state.bytes,
         )
     }
