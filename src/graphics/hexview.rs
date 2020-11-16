@@ -27,6 +27,8 @@ const CURSOR_MESH: (&[Vertex2D], &[u32]) = (&[
     7, 8, 9,
     7, 6, 9,
 ]);
+const CURSOR_RIGHT_VERTEX: ([usize; 3], [usize; 2]) = ([5, 6, 7], [8, 9]);
+const CURSOR_PADDING: f32 = 4.0;
 
 pub const LINE_SPACING: f32 = 8.0;
 pub const MARGINS: Vector = Vector::new(10.0, 10.0);
@@ -125,8 +127,6 @@ impl<B: Backend + BackendWithText> hexview::Renderer for Renderer<B> {
 
         let ascii_hex_chars = std::str::from_utf8(&HEX_CHARS[0..column_count]).unwrap();
         let ascii_width = text_width(self.backend(), style.header_font, text_size, ascii_hex_chars);
-        //let space_size = text_width(self.backend(), style.data_font, text_size, " ");
-        //let dot_size = text_width(self.backend(), style.data_font, text_size, ".");
         let start_of_bytes = right_of_offset + MARGINS.x * 2.0;
         let mut byte_buffers = Vec::new();
 
@@ -138,8 +138,6 @@ impl<B: Backend + BackendWithText> hexview::Renderer for Renderer<B> {
             let line_y = bounds_pos.1 + data_y + i as f32 * (text_size + LINE_SPACING);
             let np_have_color = style.non_printable_color.is_some();
 
-            //let mut byte_buffer = String::new();
-            //let mut ascii_buffer = String::new();
             let mut byte_spans = Vec::new();
             let mut ascii_spans = Vec::new();
             let mut np_control = false;
@@ -431,29 +429,48 @@ impl<B: Backend + BackendWithText> hexview::Renderer for Renderer<B> {
             &line_str[0..(line_offset * 3)],
         );
 
+        let pair_width = text_width(
+            self.backend(),
+            style.data_font,
+            text_size,
+            &line_str[(line_offset * 3)..(line_offset * 3 + 2)],
+        );
+
+        let cursor_width = pair_width + CURSOR_PADDING;
+
         let cursor_mesh_pos = [
-            right_of_offset + 17.0 + byte_offset - 2.0,
+            start_of_bytes + byte_offset + pair_width - pair_width / 2.0 - cursor_width / 2.0,
             MARGINS.y + text_size + LINE_SPACING + 12.0 + ((text_size + LINE_SPACING) * (cursor / column_count) as f32),
         ];
 
         let cursor_mesh = Mesh2D {
-            vertices: CURSOR_MESH.0.iter().map(|v| {
+            vertices: CURSOR_MESH.0.iter().enumerate().map(|(i, v)| {
+                let position = if CURSOR_RIGHT_VERTEX.0.contains(&i) {
+                    [cursor_width - 2.0, v.position[1]]
+                } else if CURSOR_RIGHT_VERTEX.1.contains(&i) {
+                    [cursor_width, v.position[1]]
+                } else {
+                    v.position
+                };
+
                 Vertex2D {
-                    position: v.position,
+                    position,
                     color: style.cursor_color.into_linear(),
                 }
             }).collect::<Vec<_>>(),
             indices: CURSOR_MESH.1.to_vec(),
         };
 
+        let cursor_size = Size::new(
+            cursor_mesh.vertices[9].position[0],
+            cursor_mesh.vertices[9].position[1],
+        );
+
         let cursor_prim = Primitive::Translate {
             translation: Vector::new(bounds_pos.0, bounds_pos.1) + cursor_mesh_pos.into(),
             content: Box::new(Primitive::Mesh2D {
                 buffers: cursor_mesh,
-                size: Size::new(
-                    CURSOR_MESH.0[9].position[0],
-                    CURSOR_MESH.0[9].position[1],
-                ),
+                size: cursor_size,
             }),
         };
 
@@ -463,12 +480,14 @@ impl<B: Backend + BackendWithText> hexview::Renderer for Renderer<B> {
                 keyboard_focus: {}\n\
                 cursor: {}\n\
                 cursor_position: ({}, {})\n\
+                cursor_size: {}x{}\n\
                 bytes length: {}\n\
                 byte_offset: {}\n\
                 test_offset: {}\n\
                 bounds: ({}, {}) {}x{}",
                 text_size, keyboard_focus, cursor,
                 cursor_mesh_pos[0], cursor_mesh_pos[1],
+                cursor_size.width, cursor_size.height,
                 data.len(), byte_offset, test_offset,
                 bounds_pos.0, bounds_pos.1, bounds_size.0,
                 bounds_size.1,

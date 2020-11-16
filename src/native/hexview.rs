@@ -124,7 +124,6 @@ where
 
         // Vertical margins + top headers + rows
         let height = MARGINS.y * 2.0 + self.state.text_size + LINE_SPACING + rows_size;
-        println!("height: {:?}", height);
 
         layout::Node::new(Size::new(max_width, height))
     }
