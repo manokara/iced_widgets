@@ -6,7 +6,7 @@ use iced_graphics::{
 };
 use iced_native::{mouse, Background, Color, Point, Rectangle};
 use crate::native::hexview;
-pub use crate::style::hexview::{Style, StyleSheet};
+pub use crate::style::hexview as style;
 
 const CURSOR_MESH: (&[Vertex2D], &[u32]) = (&[
     Vertex2D { position: [0.0, 0.0], color: [1.0, 1.0, 1.0, 1.0] },
@@ -53,7 +53,17 @@ struct LineSpan {
 }
 
 impl<B: Backend + BackendWithText> hexview::Renderer for Renderer<B> {
-    type Style = Box<dyn StyleSheet>;
+    type Style = Box<dyn style::StyleSheet>;
+
+    fn measure(
+        &self,
+        content: &str,
+        size: f32,
+        font: Font,
+        bounds: Size,
+    ) -> (f32, f32) {
+        self.backend().measure(content, size, font, bounds)
+    }
 
     fn draw(
         &mut self,
@@ -66,6 +76,8 @@ impl<B: Backend + BackendWithText> hexview::Renderer for Renderer<B> {
         cursor: usize,
         test_offset: f32,
         debug_enabled: bool,
+        header_font: Font,
+        data_font: Font,
         data: &[u8],
     ) -> Self::Output {
 
@@ -87,10 +99,10 @@ impl<B: Backend + BackendWithText> hexview::Renderer for Renderer<B> {
         let line_count = (data.len() as f32 / column_count as f32).ceil() as usize;
         let data_y = MARGINS.y + text_size + LINE_SPACING;
 
-        let offset_width = text_width(self.backend(), style.header_font, text_size, OFFSET_REFERENCE);
+        let offset_width = text_width(self.backend(), header_font, text_size, OFFSET_REFERENCE);
         let bytes_header_width = text_width(
             self.backend(),
-            style.header_font,
+            header_font,
             text_size,
             &BYTES_HEADER[..(column_count * 3 - 1)],
         );
@@ -120,13 +132,13 @@ impl<B: Backend + BackendWithText> hexview::Renderer for Renderer<B> {
             },
             color: style.offset_color,
             size: text_size,
-            font: style.header_font,
+            font: header_font,
             horizontal_alignment: HorizontalAlignment::Left,
             vertical_alignment: VerticalAlignment::Top,
         };
 
         let ascii_hex_chars = std::str::from_utf8(&HEX_CHARS[0..column_count]).unwrap();
-        let ascii_width = text_width(self.backend(), style.header_font, text_size, ascii_hex_chars);
+        let ascii_width = text_width(self.backend(), header_font, text_size, ascii_hex_chars);
         let start_of_bytes = right_of_offset + MARGINS.x * 2.0;
         let mut byte_buffers = Vec::new();
 
@@ -295,7 +307,7 @@ impl<B: Backend + BackendWithText> hexview::Renderer for Renderer<B> {
                     let content = byte_buffer[span.start..span.end].to_string();
                     let content_width = text_width(
                         self.backend(),
-                        style.data_font,
+                        data_font,
                         text_size,
                         &content,
                     );
@@ -314,7 +326,7 @@ impl<B: Backend + BackendWithText> hexview::Renderer for Renderer<B> {
                             height: text_size,
                         },
                         size: text_size,
-                        font: style.data_font,
+                        font: data_font,
                         horizontal_alignment: HorizontalAlignment::Left,
                         vertical_alignment: VerticalAlignment::Top,
                     });
@@ -331,7 +343,7 @@ impl<B: Backend + BackendWithText> hexview::Renderer for Renderer<B> {
                     let content = ascii_buffer[span.start..span.end].to_string();
                     let content_width = text_width(
                         self.backend(),
-                        style.data_font,
+                        data_font,
                         text_size,
                         &content,
                     );
@@ -350,7 +362,7 @@ impl<B: Backend + BackendWithText> hexview::Renderer for Renderer<B> {
                             height: text_size,
                         },
                         size: text_size,
-                        font: style.data_font,
+                        font: data_font,
                         horizontal_alignment: HorizontalAlignment::Left,
                         vertical_alignment: VerticalAlignment::Top,
                     });
@@ -374,7 +386,7 @@ impl<B: Backend + BackendWithText> hexview::Renderer for Renderer<B> {
                     },
                     color: style.offset_color,
                     size: text_size,
-                    font: style.header_font,
+                    font: header_font,
                     horizontal_alignment: HorizontalAlignment::Left,
                     vertical_alignment: VerticalAlignment::Top,
                 },
@@ -413,7 +425,7 @@ impl<B: Backend + BackendWithText> hexview::Renderer for Renderer<B> {
             },
             color: style.offset_color,
             size: text_size,
-            font: style.header_font,
+            font: header_font,
             horizontal_alignment: HorizontalAlignment::Left,
             vertical_alignment: VerticalAlignment::Top,
         };
@@ -424,14 +436,14 @@ impl<B: Backend + BackendWithText> hexview::Renderer for Renderer<B> {
 
         let byte_offset = text_width(
             self.backend(),
-            style.data_font,
+            data_font,
             text_size,
             &line_str[0..(line_offset * 3)],
         );
 
         let pair_width = text_width(
             self.backend(),
-            style.data_font,
+            data_font,
             text_size,
             &line_str[(line_offset * 3)..(line_offset * 3 + 2)],
         );
@@ -514,7 +526,7 @@ impl<B: Backend + BackendWithText> hexview::Renderer for Renderer<B> {
                     },
                     color: Color::from_rgb(1.0, 0.0, 0.0),
                     size: text_size,
-                    font: style.data_font,
+                    font: data_font,
                     horizontal_alignment: HorizontalAlignment::Left,
                     vertical_alignment: VerticalAlignment::Top,
                 },

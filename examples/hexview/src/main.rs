@@ -68,10 +68,6 @@ pub enum Theme {
     Dark,
 }
 
-pub fn main() {
-    App::run(Settings::default()).unwrap();
-}
-
 pub struct App {
     hexview_theme: Theme,
     content_name: &'static str,
@@ -88,7 +84,10 @@ pub struct App {
 pub struct HexviewTheme {
     base: Theme,
     highlight_np: bool,
-    hexview_fonts: (Font, Font),
+}
+
+pub fn main() {
+    App::run(Settings::default()).unwrap();
 }
 
 impl Sandbox for App {
@@ -204,9 +203,12 @@ impl Sandbox for App {
             .spacing(12)
             .padding(8);
 
-        let hexview_theme = modify_theme(self.hexview_theme, self.highlight_np, self.hexview_fonts);
+        let hexview_theme = modify_theme(self.hexview_theme, self.highlight_np);
         let hexview = hexview::Hexview::new(&mut self.hexview)
-            .style(hexview_theme);
+            .style(hexview_theme)
+            .data_font(self.hexview_fonts.0)
+            .header_font(self.hexview_fonts.1);
+
         let scrollable = Scrollable::new(&mut self.scrollable)
             .push(hexview);
 
@@ -219,11 +221,10 @@ impl Sandbox for App {
     }
 }
 
-fn modify_theme(base: Theme, highlight_np: bool, hexview_fonts: (Font, Font)) -> HexviewTheme {
+fn modify_theme(base: Theme, highlight_np: bool) -> HexviewTheme {
     HexviewTheme {
         base,
         highlight_np,
-        hexview_fonts,
     }
 }
 
@@ -248,8 +249,6 @@ impl hexview_style::StyleSheet for HexviewTheme {
 
         hexview_style::Style {
             non_printable_color,
-            data_font: self.hexview_fonts.0,
-            header_font: self.hexview_fonts.1,
             .. active
         }
     }

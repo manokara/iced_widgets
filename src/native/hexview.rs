@@ -1,6 +1,6 @@
 use iced_native::{
     keyboard, layout, mouse,
-    Clipboard, Element, Event, Hasher, Layout, Length,
+    Clipboard, Element, Event, Font, Hasher, Layout, Length,
     Point, Rectangle, Size, Widget,
 };
 use std::{
@@ -14,6 +14,8 @@ use crate::graphics::hexview::{LINE_SPACING, MARGINS};
 pub struct Hexview<'a, Message, Renderer: self::Renderer> {
     state: &'a mut State,
     style: Renderer::Style,
+    header_font: Font,
+    data_font: Font,
     message: PhantomData<Message>,
 }
 
@@ -33,6 +35,14 @@ pub struct State {
 pub trait Renderer: iced_native::Renderer {
     type Style: Default;
 
+    fn measure(
+        &self,
+        content: &str,
+        size: f32,
+        font: Font,
+        bounds: Size,
+    ) -> (f32, f32);
+
     fn draw(
         &mut self,
         bounds: Rectangle,
@@ -44,6 +54,8 @@ pub trait Renderer: iced_native::Renderer {
         cursor: usize,
         test_offset: f32,
         debug_enabled: bool,
+        header_font: Font,
+        data_font: Font,
         data: &[u8],
     ) -> Self::Output;
 }
@@ -54,12 +66,26 @@ impl<'a, Message, Renderer: self::Renderer> Hexview<'a, Message, Renderer> {
         Self {
             state,
             style: Renderer::Style::default(),
+            header_font: Font::Default,
+            data_font: Font::Default,
             message: PhantomData,
         }
     }
 
     pub fn style(mut self, style: impl Into<Renderer::Style>) -> Self {
         self.style = style.into();
+        self
+    }
+
+    /// Font for column headers and offsets.
+    pub fn header_font(mut self, font: Font) -> Self {
+        self.header_font = font;
+        self
+    }
+
+    /// Font for bytes and ascii.
+    pub fn data_font(mut self, font: Font) -> Self {
+        self.data_font = font;
         self
     }
 }
@@ -197,7 +223,7 @@ where
                     KeyCode::Equals if test_offset_guard_right => self.state.test_offset += 0.01,
 
                     // Debug
-                    KeyCode::D => self.state.debug_enabled = !debug_enabled,
+                    KeyCode::D if keyboard_focus => self.state.debug_enabled = !debug_enabled,
 
                     _ => (),
                 }
@@ -225,6 +251,8 @@ where
             self.state.cursor,
             self.state.test_offset,
             self.state.debug_enabled,
+            self.header_font,
+            self.data_font,
             &self.state.bytes,
         )
     }
