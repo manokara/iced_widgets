@@ -5,8 +5,11 @@ use iced_graphics::{
     Primitive, Size, Vector, Renderer, backend::Text as BackendWithText,
 };
 use iced_native::{mouse, Background, Color, Point, Rectangle};
-use crate::native::hexview;
-pub use crate::style::hexview as style;
+use crate::{
+    core::{StrChunk, range_intersect},
+    native::hexview,
+    style::hexview as style,
+};
 
 const CURSOR_MESH: (&[Vertex2D], &[u32]) = (&[
     Vertex2D { position: [0.0, 0.0], color: [1.0, 1.0, 1.0, 1.0] },
@@ -37,7 +40,7 @@ const OFFSET_REFERENCE: &'static str = "00000000";
 const BYTES_HEADER: &'static str = "00 01 02 03 04 05 06 07 08 09 0A 0B 0C 0D 0E 0F";
 const LARGE_BOUNDS: Size<f32> = Size::new(640.0, 480.0);
 const ASCII_RANGE: Range<u8> = 32..128;
-
+const SELECTION_MARGIN: Vector = Vector::new(4.0, 4.0);
 
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 enum SpanType {
@@ -54,6 +57,97 @@ struct LineSpan {
 
 impl<B: Backend + BackendWithText> hexview::Renderer for Renderer<B> {
     type Style = Box<dyn style::StyleSheet>;
+
+    fn cursor_offset(
+        &self,
+        bounds: Rectangle,
+        cursor_position: Point,
+        font: Font,
+        text_size: f32,
+        column_count: usize,
+        extend_line: bool,
+        bytes: &[u8],
+    ) -> Option<usize> {
+        let row_count = (bytes.len() as f32 / column_count as f32).ceil() as usize;
+
+        let offset_width = self.measure(
+            OFFSET_REFERENCE,
+            text_size,
+            font,
+            bounds.size(),
+        ).0;
+
+        let bytes_width = self.measure(
+            BYTES_HEADER,
+            text_size,
+            font,
+            bounds.size(),
+        ).0;
+
+        let start_of_bytes = Point::new(
+            bounds.x.floor() + MARGINS.x + offset_width + MARGINS.x * 2.0,
+            bounds.y.floor() + MARGINS.y + text_size + LINE_SPACING,
+        );
+
+        let size_of_bytes  = Size::new(
+            bytes_width,
+            start_of_bytes.y + row_count as f32 * (text_size + LINE_SPACING) - LINE_SPACING,
+        );
+
+        let bytes_bounds = Rectangle::new(start_of_bytes, size_of_bytes);
+
+        if !bytes_bounds.contains(cursor_position) {
+            return None;
+        }
+
+        let pair_size = self.measure(
+            "FF",
+            text_size,
+            font,
+            bounds.size(),
+        );
+        let space_width = self.measure(
+            " ",
+            text_size,
+            font,
+            bounds.size(),
+        ).0;
+
+        let mut cursor = None;
+
+        for row in 0..row_count {
+            let pair_y = (text_size + LINE_SPACING) * row as f32;
+
+            let mut bytes_x = 0.0;
+            let mut pair_positions = (0..column_count)
+                .enumerate()
+                .fold(Vec::new(), |mut acc, (i, _pair)| {
+                    acc.push((Point::new(bytes_x, pair_y), pair_size.0));
+                    bytes_x += pair_size.0 + if i != column_count -1 { space_width } else { 0.0 };
+                    acc
+                });
+
+            if extend_line {
+                pair_positions.push((Point::new(bytes_x, pair_y), space_width));
+            }
+
+            for (i, (position, width)) in pair_positions.iter().enumerate() {
+                let bound  = Rectangle {
+                    x: start_of_bytes.x + position.x,
+                    y: start_of_bytes.y + position.y,
+                    width: *width,
+                    height: pair_size.0,
+                };
+
+                if bound.contains(cursor_position) {
+                    cursor = Some(row * column_count + i);
+                    break;
+                }
+            }
+        }
+
+        cursor
+    }
 
     fn measure(
         &self,
@@ -78,6 +172,7 @@ impl<B: Backend + BackendWithText> hexview::Renderer for Renderer<B> {
         debug_enabled: bool,
         header_font: Font,
         data_font: Font,
+        selection: &Option<(usize, usize)>,
         data: &[u8],
     ) -> Self::Output {
 
@@ -206,7 +301,7 @@ impl<B: Backend + BackendWithText> hexview::Renderer for Renderer<B> {
                     acc.push(high);
                     acc.push(low);
 
-                    if i != 15 {
+                    if i != data_slice.len() - 1 {
                         acc.push(' ');
                     }
 
@@ -374,6 +469,90 @@ impl<B: Backend + BackendWithText> hexview::Renderer for Renderer<B> {
                     acc
                 });
 
+            let selection_prim = if let Some((start, end)) = selection {
+                let selection = *start..*end;
+                let row_range = lower_bound..upper_bound;
+                let intersection = range_intersect(row_range, selection);
+
+                if !intersection.is_empty() {
+                    let intersection_size = intersection.end - intersection.start;
+                    let start = intersection.start - lower_bound;
+                    let end = start + intersection_size;
+
+                    let (bytes_pre_slice, ascii_pre_slice) = if start > 0 {
+                        (
+                            &byte_buffer[0..(start * 3).min(byte_buffer.len())],
+                            &ascii_buffer[0..start],
+                        )
+                    } else {
+                        ("", "")
+                    };
+
+                    let bytes_slice = &byte_buffer[(start * 3)..(end * 3).min(byte_buffer.len())];
+                    let ascii_slice = &ascii_buffer[start..end];
+                    let bytes_width = self.measure(
+                        bytes_slice,
+                        text_size,
+                        data_font,
+                        bounds.size(),
+                    ).0;
+                    let ascii_width = self.measure(
+                        ascii_slice,
+                        text_size,
+                        data_font,
+                        bounds.size(),
+                    ).0;
+
+                    let bytes_x = self.measure(
+                        bytes_pre_slice,
+                        text_size,
+                        data_font,
+                        bounds.size(),
+                    ).0;
+                    let ascii_x = self.measure(
+                        ascii_pre_slice,
+                        text_size,
+                        data_font,
+                        bounds.size(),
+                    ).0;
+
+                    group(vec![
+                        // Bytes
+                        Primitive::Quad {
+                            bounds: Rectangle {
+                                x: bounds_pos.0 + start_of_bytes + bytes_x,
+                                y: line_y,
+                                width: bytes_width,
+                                height: text_size,
+                            },
+                            background: Background::Color(Color::from_rgba(0.0, 0.0, 0.0, 0.5)),
+                            border_radius: 0,
+                            border_width: 0,
+                            border_color: Color::BLACK,
+                        },
+
+                        // Ascii
+                        Primitive::Quad {
+                            bounds: Rectangle {
+                                x: right_of_bytes_header + MARGINS.x * 2.0 + ascii_x,
+                                y: line_y,
+                                width: ascii_width,
+                                height: text_size,
+                            },
+                            background: Background::Color(Color::from_rgba(0.0, 0.0, 0.0, 0.5)),
+                            border_radius: 0,
+                            border_width: 0,
+                            border_color: Color::BLACK,
+                        },
+                    ])
+
+                } else {
+                    Primitive::None
+                }
+            } else {
+                Primitive::None
+            };
+
             let primitives = vec![
                 // Offset
                 Primitive::Text {
@@ -396,6 +575,10 @@ impl<B: Backend + BackendWithText> hexview::Renderer for Renderer<B> {
 
                 // Ascii
                 group(ascii_prims),
+
+                // Selection,
+                selection_prim,
+
             ];
 
             byte_buffers.push(byte_buffer);
@@ -549,6 +732,25 @@ impl<B: Backend + BackendWithText> hexview::Renderer for Renderer<B> {
             mouse::Interaction::default(),
         )
     }
+}
+
+fn hexpairs(bytes: &[u8]) -> String {
+    bytes
+        .iter()
+        .enumerate()
+        .fold(String::new(), |mut acc, (i, b)| {
+            let high = HEX_CHARS[(b >> 4) as usize] as char;
+            let low = HEX_CHARS[(b & 0xF) as usize] as char;
+
+            acc.push(high);
+            acc.push(low);
+
+            if i != bytes.len() - 1 {
+                acc.push(' ');
+            }
+
+            acc
+        })
 }
 
 fn group(primitives: Vec<Primitive>) -> Primitive {

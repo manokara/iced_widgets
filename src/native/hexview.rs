@@ -30,10 +30,26 @@ pub struct State {
     keyboard_focus: bool,
     test_offset: f32,
     debug_enabled: bool,
+    last_click: Option<mouse::click::Click>,
+    last_click_pos: Option<Point>,
+    is_dragging: bool,
+    selection: Option<(usize, usize)>,
+    mouse_pos: Point,
 }
 
 pub trait Renderer: iced_native::Renderer {
     type Style: Default;
+
+    fn cursor_offset(
+        &self,
+        bounds: Rectangle,
+        cursor_position: Point,
+        font: Font,
+        size: f32,
+        column_count: usize,
+        extend_line: bool,
+        bytes: &[u8],
+    ) -> Option<usize>;
 
     fn measure(
         &self,
@@ -56,6 +72,7 @@ pub trait Renderer: iced_native::Renderer {
         debug_enabled: bool,
         header_font: Font,
         data_font: Font,
+        selection: &Option<(usize, usize)>,
         data: &[u8],
     ) -> Self::Output;
 }
@@ -101,6 +118,11 @@ impl State {
             keyboard_focus: false,
             test_offset: 0.0,
             debug_enabled: false,
+            last_click: None,
+            last_click_pos: None,
+            is_dragging: false,
+            selection: None,
+            mouse_pos: Point::new(0.0, 0.0),
         }
     }
     pub fn set_bytes(&mut self, bytes: &[u8]) {
@@ -111,6 +133,7 @@ impl State {
         self.bytes_hash = hasher.finish();
         self.bytes = bytes.to_vec();
         self.cursor = 0;
+        self.selection = None;
     }
 
     pub fn set_column_count(&mut self, count: usize) {
@@ -160,7 +183,7 @@ where
         layout: Layout<'_>,
         cursor_position: Point,
         _messages: &mut Vec<Message>,
-        _renderer: &Renderer,
+        renderer: &Renderer,
         _clipboard: Option<&dyn Clipboard>,
     ) {
         use keyboard::{Event as KeyboardEvent, KeyCode};
@@ -172,10 +195,77 @@ where
         let keyboard_focus = self.state.keyboard_focus;
         let test_offset = self.state.test_offset;
         let debug_enabled = self.state.debug_enabled;
+        let last_click_pos = self.state.last_click_pos;
 
         match event {
+            Event::Mouse(MouseEvent::ButtonPressed(MouseButton::Left)) => {
+                if !layout.bounds().contains(cursor_position) {
+                    return;
+                }
+
+                self.state.is_dragging = true;
+
+                let cursor_from_pos = renderer.cursor_offset(
+                    layout.bounds(),
+                    cursor_position,
+                    self.data_font,
+                    self.state.text_size,
+                    column_count,
+                    false,
+                    &self.state.bytes,
+                );
+                println!("Cursor from pos: {:?}", cursor_from_pos);
+
+                if let Some(cursor) = cursor_from_pos {
+                    self.state.cursor = cursor;
+                }
+
+                self.state.selection = None;
+                self.state.last_click_pos = Some(cursor_position);
+
+                let click = mouse::Click::new(
+                    cursor_position,
+                    self.state.last_click,
+                );
+
+                self.state.last_click = Some(click);
+            }
+
             Event::Mouse(MouseEvent::ButtonReleased(MouseButton::Left)) => {
+                if let Some(pos) = self.state.last_click_pos.take() {
+                    if cursor_position == pos {
+                        self.state.selection = None;
+                    }
+                }
+
+                self.state.is_dragging = false;
                 self.state.set_keyboard_focus(layout.bounds().contains(cursor_position));
+            }
+
+            Event::Mouse(MouseEvent::CursorMoved { x, y }) => {
+                if self.state.is_dragging {
+                    let cursor_from_pos = renderer.cursor_offset(
+                        layout.bounds(),
+                        cursor_position,
+                        self.data_font,
+                        self.state.text_size,
+                        column_count,
+                        true,
+                        &self.state.bytes,
+                    );
+
+                    if let Some(new_cursor) = cursor_from_pos {
+                        if new_cursor < cursor {
+                            self.state.selection = Some((new_cursor, cursor))
+                        } else if new_cursor > cursor {
+                            self.state.selection = Some((cursor, new_cursor))
+                        } else {
+                            self.state.selection = None;
+                        }
+                    }
+
+                    println!("Selection: {:?}", self.state.selection);
+                }
             }
 
             Event::Keyboard(KeyboardEvent::KeyPressed { key_code, .. }) => {
@@ -253,6 +343,7 @@ where
             self.state.debug_enabled,
             self.header_font,
             self.data_font,
+            &self.state.selection,
             &self.state.bytes,
         )
     }
