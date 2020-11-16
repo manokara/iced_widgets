@@ -28,12 +28,14 @@ const CURSOR_MESH: (&[Vertex2D], &[u32]) = (&[
     7, 6, 9,
 ]);
 
+pub const LINE_SPACING: f32 = 8.0;
+pub const MARGINS: Vector = Vector::new(10.0, 10.0);
 const HEX_CHARS: &[u8] = b"0123456789ABCDEF";
 const OFFSET_REFERENCE: &'static str = "00000000";
 const BYTES_HEADER: &'static str = "00 01 02 03 04 05 06 07 08 09 0A 0B 0C 0D 0E 0F";
-const LINE_SPACING: f32 = 8.0;
 const LARGE_BOUNDS: Size<f32> = Size::new(640.0, 480.0);
 const ASCII_RANGE: Range<u8> = 32..128;
+
 
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 enum SpanType {
@@ -81,7 +83,7 @@ impl<B: Backend + BackendWithText> hexview::Renderer for Renderer<B> {
             border_color: Color::BLACK,
         };
         let line_count = (data.len() as f32 / column_count as f32).ceil() as usize;
-        let data_y = 10.0 + text_size + LINE_SPACING;
+        let data_y = MARGINS.y + text_size + LINE_SPACING;
 
         let offset_width = text_width(self.backend(), style.header_font, text_size, OFFSET_REFERENCE);
         let bytes_header_width = text_width(
@@ -90,15 +92,15 @@ impl<B: Backend + BackendWithText> hexview::Renderer for Renderer<B> {
             text_size,
             &BYTES_HEADER[..(column_count * 3 - 1)],
         );
-        let right_of_offset = 10.0 + offset_width;
-        let right_of_bytes_header = right_of_offset + 20.0 + bytes_header_width;
+        let right_of_offset = MARGINS.x + offset_width;
+        let right_of_bytes_header = right_of_offset + MARGINS.x * 2.0 + bytes_header_width;
 
         let offset_separator = Primitive::Quad {
             bounds: Rectangle {
-                x: bounds_pos.0 + right_of_offset + 10.0,
-                y: bounds_pos.1 + 10.0,
+                x: bounds_pos.0 + right_of_offset + MARGINS.x,
+                y: bounds_pos.1 + MARGINS.y,
                 width: 0.5,
-                height: bounds_size.1 - 20.0,
+                height: bounds_size.1 - MARGINS.y * 2.0,
             },
             background: Background::Color(style.line_color),
             border_radius: 0,
@@ -109,8 +111,8 @@ impl<B: Backend + BackendWithText> hexview::Renderer for Renderer<B> {
         let bytes_header = Primitive::Text {
             content: BYTES_HEADER[0..(column_count as usize * 3 - 1)].into(),
             bounds: Rectangle {
-                x: bounds_pos.0 + right_of_offset + 20.0,
-                y: bounds_pos.1 + 10.0,
+                x: bounds_pos.0 + right_of_offset + MARGINS.x * 2.0,
+                y: bounds_pos.1 + MARGINS.y,
                 width: bytes_header_width,
                 height: text_size,
             },
@@ -125,14 +127,14 @@ impl<B: Backend + BackendWithText> hexview::Renderer for Renderer<B> {
         let ascii_width = text_width(self.backend(), style.header_font, text_size, ascii_hex_chars);
         //let space_size = text_width(self.backend(), style.data_font, text_size, " ");
         //let dot_size = text_width(self.backend(), style.data_font, text_size, ".");
-        let start_of_bytes = right_of_offset + 20.0;
+        let start_of_bytes = right_of_offset + MARGINS.x * 2.0;
         let mut byte_buffers = Vec::new();
 
         let lines: Vec<Primitive> = (0..line_count).map(|i| {
             let lower_bound = column_count * i;
             let upper_bound = (lower_bound + column_count).min(data.len());
             let data_slice = &data[lower_bound..upper_bound];
-            let line_x = bounds_pos.0 + 10.0;
+            let line_x = bounds_pos.0 + MARGINS.x;
             let line_y = bounds_pos.1 + data_y + i as f32 * (text_size + LINE_SPACING);
             let np_have_color = style.non_printable_color.is_some();
 
@@ -323,7 +325,7 @@ impl<B: Backend + BackendWithText> hexview::Renderer for Renderer<B> {
                     acc
                 });
 
-            data_x = right_of_bytes_header + 20.0;
+            data_x = right_of_bytes_header + MARGINS.x * 2.0;
 
             let ascii_prims = ascii_spans
                 .iter()
@@ -392,10 +394,10 @@ impl<B: Backend + BackendWithText> hexview::Renderer for Renderer<B> {
 
         let bytes_separator = Primitive::Quad {
             bounds: Rectangle {
-                x: bounds_pos.0 + right_of_bytes_header + 10.0,
-                y: bounds_pos.1 + 10.0,
+                x: bounds_pos.0 + right_of_bytes_header + MARGINS.x,
+                y: bounds_pos.1 + MARGINS.y,
                 width: 0.5,
-                height: bounds_size.1 - 20.0,
+                height: bounds_size.1 - MARGINS.y * 2.0,
             },
             background: Background::Color(style.line_color),
             border_radius: 0,
@@ -406,8 +408,8 @@ impl<B: Backend + BackendWithText> hexview::Renderer for Renderer<B> {
         let ascii_columns = Primitive::Text {
             content: ascii_hex_chars.into(),
             bounds: Rectangle {
-                x: bounds_pos.0 + right_of_bytes_header + 20.0,
-                y: bounds_pos.1 + 10.0,
+                x: bounds_pos.0 + right_of_bytes_header + MARGINS.x * 2.0,
+                y: bounds_pos.1 + MARGINS.y,
                 width: ascii_width,
                 height: text_size,
             },
@@ -431,7 +433,7 @@ impl<B: Backend + BackendWithText> hexview::Renderer for Renderer<B> {
 
         let cursor_mesh_pos = [
             right_of_offset + 17.0 + byte_offset - 2.0,
-            10.0 + text_size + LINE_SPACING + 12.0 + ((text_size + LINE_SPACING) * (cursor / column_count) as f32),
+            MARGINS.y + text_size + LINE_SPACING + 12.0 + ((text_size + LINE_SPACING) * (cursor / column_count) as f32),
         ];
 
         let cursor_mesh = Mesh2D {
@@ -486,7 +488,7 @@ impl<B: Backend + BackendWithText> hexview::Renderer for Renderer<B> {
                 Primitive::Text {
                     content: debug_text,
                     bounds: Rectangle {
-                        x: bounds_pos.0 + 10.0,
+                        x: bounds_pos.0 + MARGINS.x,
                         y: bounds_pos.1 + data_y + line_count as f32 * (text_size + LINE_SPACING),
                         width: 400.0,
                         height: text_size * debug_line_count as f32,

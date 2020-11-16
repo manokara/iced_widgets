@@ -7,6 +7,7 @@ use std::{
     hash::Hash,
     marker::PhantomData,
 };
+use crate::graphics::hexview::{LINE_SPACING, MARGINS};
 
 /// A view into a region of bytes
 #[allow(missing_debug_implementations)]
@@ -23,7 +24,7 @@ pub struct State {
     cursor: usize,
     text_size: f32,
     column_count: usize,
-    changed_bytes: bool,
+    bytes_hash: u64,
     keyboard_focus: bool,
     test_offset: f32,
     debug_enabled: bool,
@@ -70,15 +71,19 @@ impl State {
             cursor: 0,
             text_size: 17.0,
             column_count: 16,
-            changed_bytes: false,
+            bytes_hash: 0,
             keyboard_focus: false,
             test_offset: 0.0,
             debug_enabled: false,
         }
     }
     pub fn set_bytes(&mut self, bytes: &[u8]) {
+        use std::hash::Hasher;
+
+        let mut hasher = iced_native::Hasher::default();
+        hasher.write(bytes);
+        self.bytes_hash = hasher.finish();
         self.bytes = bytes.to_vec();
-        self.changed_bytes = true;
         self.cursor = 0;
     }
 
@@ -112,11 +117,16 @@ where
         _renderer: &Renderer,
         limits: &layout::Limits,
     ) -> layout::Node {
-        let limits = limits.width(Length::Fill).height(Length::Fill);
-        let _rows = (self.state.bytes.len() as f32 / self.state.column_count as f32).ceil();
-        let size = limits.resolve(Size::ZERO);
+        let limits = limits.width(Length::Fill);
+        let max_width = limits.max().width;
+        let rows = (self.state.bytes.len() as f32 / self.state.column_count as f32).ceil();
+        let rows_size = (self.state.text_size + LINE_SPACING) * rows;
 
-        layout::Node::new(size)
+        // Vertical margins + top headers + rows
+        let height = MARGINS.y * 2.0 + self.state.text_size + LINE_SPACING + rows_size;
+        println!("height: {:?}", height);
+
+        layout::Node::new(Size::new(max_width, height))
     }
 
     fn on_event(
@@ -224,7 +234,7 @@ where
         struct Marker;
 
         std::any::TypeId::of::<Marker>().hash(state);
-        self.state.changed_bytes.hash(state);
+        self.state.bytes_hash.hash(state);
     }
 }
 
