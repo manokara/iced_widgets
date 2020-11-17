@@ -55,7 +55,7 @@ const FONT_OPTIONS: &[&'static str] = &[
 
 #[derive(Debug, Clone)]
 pub enum Message {
-    ColumnCount(usize),
+    ColumnCount(u8),
     ThemeSelected(Theme),
     ContentSelected(&'static str),
     FontSelected(&'static str),
@@ -74,6 +74,7 @@ pub struct App {
     font_name: &'static str,
     hexview_fonts: (Font, Font),
     highlight_np: bool,
+    hexview_columns: u8,
     hexview: hexview::State,
     column_slider: slider::State,
     content_list: pick_list::State<&'static str>,
@@ -104,6 +105,7 @@ impl Sandbox for App {
             font_name: "Default",
             hexview_fonts: (Font::Default, Font::Default),
             highlight_np: true,
+            hexview_columns: 16,
             column_slider: slider::State::new(),
             content_list: pick_list::State::default(),
             scrollable: scrollable::State::new(),
@@ -117,7 +119,7 @@ impl Sandbox for App {
 
     fn update(&mut self, event: Message) {
         match event {
-            Message::ColumnCount(n) => self.hexview.set_column_count(n),
+            Message::ColumnCount(n) => self.hexview_columns = n,
             Message::ThemeSelected(t) => self.hexview_theme = t,
             Message::ContentSelected(name) => {
                 match name {
@@ -148,9 +150,9 @@ impl Sandbox for App {
     fn view(&mut self) -> Element<Message> {
         let column_slider = Slider::new(
             &mut self.column_slider,
-            1.0..=16.0,
-            16.0f32,
-            |n| Message::ColumnCount(n.floor() as usize)
+            1.0..=32.0,
+            self.hexview_columns as f32,
+            |n| Message::ColumnCount(n.floor() as u8)
         )
             .width(Length::Units(64));
 
@@ -190,6 +192,7 @@ impl Sandbox for App {
         let row = Row::with_children(vec![
             Text::new("Column Count:").into(),
             column_slider.into(),
+            Text::new(format!("{}", self.hexview_columns)).into(),
             Text::new("Theme:").into(),
             light_radio.into(),
             dark_radio.into(),
@@ -207,7 +210,8 @@ impl Sandbox for App {
         let hexview = hexview::Hexview::new(&mut self.hexview)
             .style(hexview_theme)
             .data_font(self.hexview_fonts.0)
-            .header_font(self.hexview_fonts.1);
+            .header_font(self.hexview_fonts.1)
+            .column_count(self.hexview_columns);
 
         let scrollable = Scrollable::new(&mut self.scrollable)
             .push(hexview);

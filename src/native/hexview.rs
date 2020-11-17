@@ -7,7 +7,10 @@ use std::{
     hash::Hash,
     marker::PhantomData,
 };
-use crate::graphics::hexview::{LINE_SPACING, MARGINS};
+use crate::{
+    core::clamp,
+    graphics::hexview::{LINE_SPACING, MARGINS},
+};
 
 /// A view into a region of bytes
 #[allow(missing_debug_implementations)]
@@ -16,6 +19,8 @@ pub struct Hexview<'a, Message, Renderer: self::Renderer> {
     style: Renderer::Style,
     header_font: Font,
     data_font: Font,
+    font_size: f32,
+    column_count: u8,
     message: PhantomData<Message>,
 }
 
@@ -24,8 +29,6 @@ pub struct Hexview<'a, Message, Renderer: self::Renderer> {
 pub struct State {
     bytes: Vec<u8>,
     cursor: usize,
-    text_size: f32,
-    column_count: usize,
     bytes_hash: u64,
     keyboard_focus: bool,
     test_offset: f32,
@@ -83,14 +86,22 @@ impl<'a, Message, Renderer: self::Renderer> Hexview<'a, Message, Renderer> {
         Self {
             state,
             style: Renderer::Style::default(),
+            font_size: 17.0,
             header_font: Font::Default,
             data_font: Font::Default,
+            column_count: 16,
             message: PhantomData,
         }
     }
 
     pub fn style(mut self, style: impl Into<Renderer::Style>) -> Self {
         self.style = style.into();
+        self
+    }
+
+    /// The size of the font used in the widget
+    pub fn font_size(mut self, size: f32) -> Self {
+        self.font_size = size;
         self
     }
 
@@ -105,6 +116,14 @@ impl<'a, Message, Renderer: self::Renderer> Hexview<'a, Message, Renderer> {
         self.data_font = font;
         self
     }
+
+    /// How many columns therer are in the view
+    ///
+    /// `count` will be clamped to a number in the range `1..=32`.
+    pub fn column_count(mut self, count: u8) -> Self {
+        self.column_count = clamp(count, 1, 32);
+        self
+    }
 }
 
 impl State {
@@ -112,8 +131,6 @@ impl State {
         Self {
             bytes: Vec::new(),
             cursor: 0,
-            text_size: 17.0,
-            column_count: 16,
             bytes_hash: 0,
             keyboard_focus: false,
             test_offset: 0.0,
@@ -134,14 +151,6 @@ impl State {
         self.bytes = bytes.to_vec();
         self.cursor = 0;
         self.selection = None;
-    }
-
-    pub fn set_column_count(&mut self, count: usize) {
-        self.column_count = count.max(1);
-    }
-
-    pub fn set_text_size(&mut self, size: f32) {
-        self.text_size = size.max(10.0);
     }
 
     pub fn set_keyboard_focus(&mut self, focus: bool) {
@@ -168,11 +177,11 @@ where
     ) -> layout::Node {
         let limits = limits.width(Length::Fill);
         let max_width = limits.max().width;
-        let rows = (self.state.bytes.len() as f32 / self.state.column_count as f32).ceil();
-        let rows_size = (self.state.text_size + LINE_SPACING) * rows;
+        let rows = (self.state.bytes.len() as f32 / self.column_count as usize as usize as f32).ceil();
+        let rows_size = (self.font_size + LINE_SPACING) * rows;
 
         // Vertical margins + top headers + rows
-        let height = MARGINS.y * 2.0 + self.state.text_size + LINE_SPACING + rows_size;
+        let height = MARGINS.y * 2.0 + self.font_size + LINE_SPACING + rows_size;
 
         layout::Node::new(Size::new(max_width, height))
     }
@@ -190,7 +199,7 @@ where
         use mouse::{Button as MouseButton, Event as MouseEvent};
 
         let bytes_len = self.state.bytes.len();
-        let column_count = self.state.column_count;
+        let column_count = self.column_count as usize;
         let cursor = self.state.cursor;
         let keyboard_focus = self.state.keyboard_focus;
         let test_offset = self.state.test_offset;
@@ -209,8 +218,8 @@ where
                     layout.bounds(),
                     cursor_position,
                     self.data_font,
-                    self.state.text_size,
-                    column_count,
+                    self.font_size,
+                    column_count as usize as usize,
                     false,
                     &self.state.bytes,
                 );
@@ -248,8 +257,8 @@ where
                         layout.bounds(),
                         cursor_position,
                         self.data_font,
-                        self.state.text_size,
-                        column_count,
+                        self.font_size,
+                        column_count as usize as usize,
                         true,
                         &self.state.bytes,
                     );
@@ -269,15 +278,15 @@ where
             }
 
             Event::Keyboard(KeyboardEvent::KeyPressed { key_code, .. }) => {
-                let line_start = cursor / column_count * column_count;
-                let line_end = (line_start + column_count - 1).min(bytes_len - 1);
+                let line_start = cursor / column_count as usize as usize * column_count as usize;
+                let line_end = (line_start + column_count as usize - 1).min(bytes_len - 1);
                 let cursor_guard_left = cursor > 0 && keyboard_focus;
                 let cursor_guard_right = if bytes_len > 0 {
                     self.state.cursor < bytes_len - 1 && keyboard_focus
                 } else {
                     false
                 };
-                let cursor_guard_up = cursor >= column_count && keyboard_focus;
+                let cursor_guard_up = cursor >= column_count as usize && keyboard_focus;
                 let cursor_guard_down = bytes_len > 0 && keyboard_focus;
                 let cursor_guard_home = cursor > line_start && keyboard_focus;
                 let cursor_guard_end = cursor < line_end && keyboard_focus;
@@ -290,10 +299,10 @@ where
                     // Cursor movement
                     KeyCode::Left if cursor_guard_left => self.state.cursor -= 1,
                     KeyCode::Right if cursor_guard_right => self.state.cursor += 1,
-                    KeyCode::Up if cursor_guard_up => self.state.cursor -= column_count,
+                    KeyCode::Up if cursor_guard_up => self.state.cursor -= column_count as usize,
                     KeyCode::Down if cursor_guard_down => {
-                        if cursor + column_count <= bytes_len - 1 {
-                            self.state.cursor += column_count;
+                        if cursor + column_count as usize <= bytes_len - 1 {
+                            self.state.cursor += column_count as usize;
                         } else {
                             self.state.cursor = bytes_len - 1;
                         }
@@ -335,8 +344,8 @@ where
             layout.bounds(),
             cursor_position,
             &self.style,
-            self.state.text_size,
-            self.state.column_count.max(1),
+            self.font_size,
+            self.column_count as usize,
             self.state.keyboard_focus,
             self.state.cursor,
             self.state.test_offset,
