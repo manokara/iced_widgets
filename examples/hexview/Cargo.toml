@@ -6,5 +6,5 @@ edition = "2018"
 publish = false
 
 [dependencies]
-iced = { path = "../../iced" }
+iced = { git = "https://github.com/hecrj/iced" , rev = "73811c3" }
 iced_widgets = { path = "../../" }
