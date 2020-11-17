@@ -1,3 +1,7 @@
+//! Widget logic for an [`Hexview`] in native plataforms.
+//!
+//! [`Hexview`]: struct.Hexview.html
+
 use iced_native::{
     keyboard, layout, mouse,
     Clipboard, Element, Event, Font, Hasher, Layout, Length,
@@ -12,7 +16,12 @@ use crate::{
     graphics::hexview::{LINE_SPACING, MARGINS},
 };
 
-/// A view into a region of bytes
+/// A view into a region of bytes.
+///
+/// The widget owns the bytes it shows, so be careful when using
+/// [`State::set_bytes`] with huge data.
+///
+/// [`State::set_bytes`]: struct.State.html#method.set_bytes
 #[allow(missing_debug_implementations)]
 pub struct Hexview<'a, Message, Renderer: self::Renderer> {
     state: &'a mut State,
@@ -25,6 +34,8 @@ pub struct Hexview<'a, Message, Renderer: self::Renderer> {
 }
 
 /// The local state of an [`Hexview`].
+///
+/// [`Hexview`]: struct.Hexview.html
 #[derive(Debug)]
 pub struct State {
     bytes: Vec<u8>,
@@ -40,9 +51,14 @@ pub struct State {
     mouse_pos: Point,
 }
 
+/// The renderer of an `Hexview`.
+///
+/// [`Hexview`]: struct.Hexview.html
 pub trait Renderer: iced_native::Renderer {
+    /// The style supported by this renderer.
     type Style: Default;
 
+    /// Calculates an offset to the data from mouse position.
     fn cursor_offset(
         &self,
         bounds: Rectangle,
@@ -54,6 +70,8 @@ pub trait Renderer: iced_native::Renderer {
         bytes: &[u8],
     ) -> Option<usize>;
 
+    /// Measures the text contents with the given size and font, returning the
+    /// size of a laid out paragraph that fits in the provided bounds.
     fn measure(
         &self,
         content: &str,
@@ -62,6 +80,9 @@ pub trait Renderer: iced_native::Renderer {
         bounds: Size,
     ) -> (f32, f32);
 
+    /// Draws an `Hexview`.
+    ///
+    /// [`Hexview`]: struct.Hexview.html
     fn draw(
         &mut self,
         bounds: Rectangle,
@@ -94,32 +115,43 @@ impl<'a, Message, Renderer: self::Renderer> Hexview<'a, Message, Renderer> {
         }
     }
 
+    /// Sets the style of an [`Hexview`].
+    ///
+    /// [`Hexview`]: struct.Heview.html
     pub fn style(mut self, style: impl Into<Renderer::Style>) -> Self {
         self.style = style.into();
         self
     }
 
-    /// The size of the font used in the widget
+    /// Sets the size of the fonts in an [`Hexview`].
+    ///
+    /// [`Hexview`]: struct.Heview.html
     pub fn font_size(mut self, size: f32) -> Self {
         self.font_size = size;
         self
     }
 
-    /// Font for column headers and offsets.
+    /// Sets the font for column headers and offsets in [`Hexview`].
+    ///
+    /// [`Hexview`]: struct.Heview.html
     pub fn header_font(mut self, font: Font) -> Self {
         self.header_font = font;
         self
     }
 
-    /// Font for bytes and ascii.
+    /// Sets the font for bytes and ASCII representation in an [`Hexview`].
+    ///
+    /// [`Hexview`]: struct.Heview.html
     pub fn data_font(mut self, font: Font) -> Self {
         self.data_font = font;
         self
     }
 
-    /// How many columns therer are in the view
+    /// Sets the amount of columns in an [`Hexview`].
     ///
     /// `count` will be clamped to a number in the range `1..=32`.
+    ///
+    /// [`Hexview`]: struct.Heview.html
     pub fn column_count(mut self, count: u8) -> Self {
         self.column_count = clamp(count, 1, 32);
         self
@@ -127,6 +159,9 @@ impl<'a, Message, Renderer: self::Renderer> Hexview<'a, Message, Renderer> {
 }
 
 impl State {
+    /// Creates a new [`Hexview`] state with default values.
+    ///
+    /// [`Hexview`]: struct.Heview.html
     pub fn new() -> Self {
         Self {
             bytes: Vec::new(),
@@ -142,6 +177,13 @@ impl State {
             mouse_pos: Point::new(0.0, 0.0),
         }
     }
+
+    /// Sets the data [`Hexview`] will be working with.
+    ///
+    /// Currently, we just clone the data into a Vec, which should work fine for
+    /// small amounts of data.
+    ///
+    /// [`Hexview`]: struct.Heview.html
     pub fn set_bytes(&mut self, bytes: &[u8]) {
         use std::hash::Hasher;
 
@@ -153,6 +195,13 @@ impl State {
         self.selection = None;
     }
 
+    /// Sets the keyboard focus of an [`Hexview`].
+    ///
+    /// The keyboard focus is automatically determined by whether the user has
+    /// cicked inside the widget, but can be manually set in order to use
+    /// shortcuts and move around.
+    ///
+    /// [`Hexview`]: struct.Heview.html
     pub fn set_keyboard_focus(&mut self, focus: bool) {
         self.keyboard_focus = focus;
     }

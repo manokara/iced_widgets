@@ -1,4 +1,4 @@
-//! Style for the [`Hexview`] widget.
+//! Style for an [`Hexview`] widget.
 //!
 //! [`Hexview`]: ../native/hexview/struct.Hexview.html
 use iced_native::Color;
@@ -26,10 +26,22 @@ pub struct Style {
 ///
 /// [`Hexview`]: ../../native/hexview/struct.Hexview.html
 pub trait StyleSheet {
+    /// The active style of an [`Hexview`].
+    ///
+    /// [`Hexview`]: ../../native/hexview/struct.Hexview.html
     fn active(&self) -> Style;
 }
 
+/// Built-in light theme for [`Hexview`].
+///
+/// [`Hexview`]: ../../native/hexview/struct.Hexview.html
+#[allow(missing_debug_implementations)]
 pub struct Light;
+
+/// Built-in dark theme for [`Hexview`].
+///
+/// [`Hexview`]: ../../native/hexview/struct.Hexview.html
+#[allow(missing_debug_implementations)]
 pub struct Dark;
 
 impl Light {

@@ -1,21 +1,12 @@
 use iced::{
-    pick_list, scrollable, slider,
-    Align, Checkbox, Column, Container, Font, Element, Length, PickList,
-    Radio, Row, Sandbox, Scrollable, Settings, Slider,
-    Text,
+    pick_list, scrollable, slider, Align, Checkbox, Column, Container, Element, Font, Length,
+    PickList, Radio, Row, Sandbox, Scrollable, Settings, Slider, Text,
 };
-use iced_widgets::{
-    native::hexview,
-    style::hexview as hexview_style,
-};
+use iced_widgets::{native::hexview, style::hexview as hexview_style};
 
 macro_rules! load_data {
     ($p:expr) => {
-        include_bytes!(concat!(
-            env!("CARGO_MANIFEST_DIR"),
-            "/data/",
-            $p,
-        ))
+        include_bytes!(concat!(env!("CARGO_MANIFEST_DIR"), "/data/", $p,))
     };
 }
 
@@ -42,16 +33,8 @@ const LOREM_IPSUM: &[u8] = b"Lorem ipsum dolor sit amet, consectetur adipiscing 
                              interdum massa interdum gravida gravida. Nam ullamcorper.";
 const TGA_IMAGE: &[u8] = load_data!("black_square.tga");
 const PNG_IMAGE: &[u8] = load_data!("black_square.png");
-const SAMPLE_OPTIONS: &[&'static str] = &[
-    "Lorem Ipsum",
-    "TGA Image",
-    "PNG Image",
-];
-const FONT_OPTIONS: &[&'static str] = &[
-    "Default",
-    "Noto Sans",
-    "Hack",
-];
+const SAMPLE_OPTIONS: &[&'static str] = &["Lorem Ipsum", "TGA Image", "PNG Image"];
+const FONT_OPTIONS: &[&'static str] = &["Default", "Noto Sans", "Hack"];
 
 #[derive(Debug, Clone)]
 pub enum Message {
@@ -95,7 +78,7 @@ impl Sandbox for App {
     type Message = Message;
 
     fn new() -> App {
-        let mut hexview =  hexview::State::new();
+        let mut hexview = hexview::State::new();
         hexview.set_bytes(LOREM_IPSUM);
 
         App {
@@ -130,7 +113,7 @@ impl Sandbox for App {
                 }
 
                 self.content_name = name;
-            },
+            }
             Message::FontSelected(name) => {
                 match name {
                     "Default" => self.hexview_fonts = (Font::Default, Font::Default),
@@ -152,21 +135,21 @@ impl Sandbox for App {
             &mut self.column_slider,
             1.0..=32.0,
             self.hexview_columns as f32,
-            |n| Message::ColumnCount(n.floor() as u8)
+            |n| Message::ColumnCount(n.floor() as u8),
         )
-            .width(Length::Units(64));
+        .width(Length::Units(64));
 
         let light_radio = Radio::new(
             Theme::Light,
             "Light",
             Some(self.hexview_theme),
-            Message::ThemeSelected
+            Message::ThemeSelected,
         );
         let dark_radio = Radio::new(
             Theme::Dark,
             "Dark",
             Some(self.hexview_theme),
-            Message::ThemeSelected
+            Message::ThemeSelected,
         );
 
         let content_list = PickList::new(
@@ -186,7 +169,7 @@ impl Sandbox for App {
         let highlight_ckb = Checkbox::new(
             self.highlight_np,
             "Highlight non-printable",
-            Message::HighlightNonPrintable
+            Message::HighlightNonPrintable,
         );
 
         let row = Row::with_children(vec![
@@ -202,9 +185,9 @@ impl Sandbox for App {
             content_list.into(),
             highlight_ckb.into(),
         ])
-            .align_items(Align::Center)
-            .spacing(12)
-            .padding(8);
+        .align_items(Align::Center)
+        .spacing(12)
+        .padding(8);
 
         let hexview_theme = modify_theme(self.hexview_theme, self.highlight_np);
         let hexview = hexview::Hexview::new(&mut self.hexview)
@@ -213,8 +196,7 @@ impl Sandbox for App {
             .header_font(self.hexview_fonts.1)
             .column_count(self.hexview_columns);
 
-        let scrollable = Scrollable::new(&mut self.scrollable)
-            .push(hexview);
+        let scrollable = Scrollable::new(&mut self.scrollable).push(hexview);
 
         let column = Column::with_children(vec![row.into(), scrollable.into()]);
 
@@ -226,10 +208,7 @@ impl Sandbox for App {
 }
 
 fn modify_theme(base: Theme, highlight_np: bool) -> HexviewTheme {
-    HexviewTheme {
-        base,
-        highlight_np,
-    }
+    HexviewTheme { base, highlight_np }
 }
 
 impl Into<Box<dyn hexview_style::StyleSheet>> for Theme {
@@ -246,14 +225,14 @@ impl hexview_style::StyleSheet for HexviewTheme {
         let base: Box<dyn hexview_style::StyleSheet> = self.base.into();
         let active = base.active();
         let non_printable_color = if self.highlight_np {
-           active.non_printable_color
+            active.non_printable_color
         } else {
             None
         };
 
         hexview_style::Style {
             non_printable_color,
-            .. active
+            ..active
         }
     }
 }

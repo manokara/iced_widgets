@@ -1,14 +1,27 @@
+//! Common types and functions used across the crate
+
 use std::ops::Range;
 
+/// A iterator over a string slice in (non-overlapping) chunks (`chunk_size` elements at a time),
+/// starting at the beginning of the slice.
+///
+/// When the slice is not evenly divided by the chunk size, the last slice of the iteration will be
+/// the remainder.
+#[derive(Debug)]
 pub struct StrChunkIter<'a> {
     v: &'a str,
     chunk_size: usize,
 }
 
+/// A trait for converting a string slice to chunks of a fixed size.
 pub trait StrChunk {
+    /// Returns an interator over `chunk_size` slices of a string slice, starting at the beginning.
+    ///
+    /// Unlike `std::slice::chunks`, this does not return a slice of chars, but `str`s.
     fn chunks(&self, chunk_size: usize) -> StrChunkIter<'_>;
 }
 
+/// Restrict a value to a certain interval.
 pub fn clamp<T>(value: T, min: T, max: T) -> T where T: Copy + PartialOrd {
     if value < min {
         min
@@ -19,6 +32,10 @@ pub fn clamp<T>(value: T, min: T, max: T) -> T where T: Copy + PartialOrd {
     }
 }
 
+/// Intersects a range with another.
+///
+/// If the ranges do not intersect, an empty range (`start == end`) is returned, where `start` is
+/// the highest lower bound between them.
 pub fn range_intersect<T: Copy + PartialOrd + Ord>(a: Range<T>, b: Range<T>) -> Range<T> {
     use std::cmp::{max, min};
 

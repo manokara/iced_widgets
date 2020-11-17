@@ -1,3 +1,7 @@
+//! Renderer implementation for an [`Hexview`].
+//!
+//! [`Hexview`]: struct.Heview.html
+
 use std::ops::Range;
 use iced_graphics::{
     triangle::{Mesh2D, Vertex2D},
@@ -33,7 +37,17 @@ const CURSOR_MESH: (&[Vertex2D], &[u32]) = (&[
 const CURSOR_RIGHT_VERTEX: ([usize; 3], [usize; 2]) = ([5, 6, 7], [8, 9]);
 const CURSOR_PADDING: f32 = 4.0;
 
+/// Spacing between each row in an [`Hexview`].
+///
+/// [`Hexview`]: struct.Heview.html
 pub const LINE_SPACING: f32 = 8.0;
+
+/// General margins used in an [`Hexview`].
+///
+/// This constant is used both for padding the text and also for spacing the
+/// section separators.
+///
+/// [`Hexview`]: struct.Heview.html
 pub const MARGINS: Vector = Vector::new(10.0, 10.0);
 const HEX_CHARS: &[u8] = b"0123456789ABCDEF\
                            0123456789ABCDEF";
