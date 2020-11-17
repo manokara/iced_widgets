@@ -6,7 +6,7 @@ use iced_graphics::{
 };
 use iced_native::{mouse, Background, Color, Point, Rectangle};
 use crate::{
-    core::{StrChunk, range_intersect},
+    core::range_intersect,
     native::hexview,
     style::hexview as style,
 };
@@ -35,12 +35,12 @@ const CURSOR_PADDING: f32 = 4.0;
 
 pub const LINE_SPACING: f32 = 8.0;
 pub const MARGINS: Vector = Vector::new(10.0, 10.0);
-const HEX_CHARS: &[u8] = b"0123456789ABCDEF";
+const HEX_CHARS: &[u8] = b"0123456789ABCDEF\
+                           0123456789ABCDEF";
 const OFFSET_REFERENCE: &'static str = "00000000";
-const BYTES_HEADER: &'static str = "00 01 02 03 04 05 06 07 08 09 0A 0B 0C 0D 0E 0F";
-const LARGE_BOUNDS: Size<f32> = Size::new(640.0, 480.0);
+const BYTES_HEADER: &'static str = "00 01 02 03 04 05 06 07 08 09 0A 0B 0C 0D 0E 0F \
+                                    10 11 12 13 14 15 16 17 18 19 1A 1B 1C 1D 1E 1F";
 const ASCII_RANGE: Range<u8> = 32..128;
-const SELECTION_MARGIN: Vector = Vector::new(4.0, 4.0);
 
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 enum SpanType {
@@ -77,8 +77,10 @@ impl<B: Backend + BackendWithText> hexview::Renderer for Renderer<B> {
             bounds.size(),
         ).0;
 
+        let bytes_header_slice = &BYTES_HEADER[0..(column_count * 3 - 1)];
+
         let bytes_width = self.measure(
-            BYTES_HEADER,
+            bytes_header_slice,
             text_size,
             font,
             bounds.size(),
@@ -194,13 +196,21 @@ impl<B: Backend + BackendWithText> hexview::Renderer for Renderer<B> {
         let line_count = (data.len() as f32 / column_count as f32).ceil() as usize;
         let data_y = MARGINS.y + text_size + LINE_SPACING;
 
-        let offset_width = text_width(self.backend(), header_font, text_size, OFFSET_REFERENCE);
-        let bytes_header_width = text_width(
-            self.backend(),
-            header_font,
+        let offset_width = self.measure(
+            OFFSET_REFERENCE,
             text_size,
-            &BYTES_HEADER[..(column_count * 3 - 1)],
-        );
+            header_font,
+            bounds.size(),
+        ).0;
+
+        let bytes_header_slice = &BYTES_HEADER[0..(column_count * 3 - 1)];
+        let bytes_header_width = self.measure(
+            bytes_header_slice,
+            text_size,
+            header_font,
+            bounds.size(),
+        ).0;
+
         let right_of_offset = MARGINS.x + offset_width;
         let right_of_bytes_header = right_of_offset + MARGINS.x * 2.0 + bytes_header_width;
 
@@ -218,7 +228,7 @@ impl<B: Backend + BackendWithText> hexview::Renderer for Renderer<B> {
         };
 
         let bytes_header = Primitive::Text {
-            content: BYTES_HEADER[0..(column_count as usize * 3 - 1)].into(),
+            content: bytes_header_slice.into(),
             bounds: Rectangle {
                 x: bounds_pos.0 + right_of_offset + MARGINS.x * 2.0,
                 y: bounds_pos.1 + MARGINS.y,
@@ -233,7 +243,14 @@ impl<B: Backend + BackendWithText> hexview::Renderer for Renderer<B> {
         };
 
         let ascii_hex_chars = std::str::from_utf8(&HEX_CHARS[0..column_count]).unwrap();
-        let ascii_width = text_width(self.backend(), header_font, text_size, ascii_hex_chars);
+
+        let ascii_width = self.measure(
+            ascii_hex_chars,
+            text_size,
+            header_font,
+            bounds.size()
+        ).0;
+
         let start_of_bytes = right_of_offset + MARGINS.x * 2.0;
         let mut byte_buffers = Vec::new();
 
@@ -400,12 +417,12 @@ impl<B: Backend + BackendWithText> hexview::Renderer for Renderer<B> {
                 .iter()
                 .fold(Vec::new(), |mut acc, span| {
                     let content = byte_buffer[span.start..span.end].to_string();
-                    let content_width = text_width(
-                        self.backend(),
-                        data_font,
-                        text_size,
+                    let content_width = self.measure(
                         &content,
-                    );
+                        text_size,
+                        data_font,
+                        bounds.size(),
+                    ).0;
                     let color = match span.ty {
                         SpanType::Printable => style.data_color,
                         SpanType::NonPrintable => style.non_printable_color.unwrap(),
@@ -436,12 +453,12 @@ impl<B: Backend + BackendWithText> hexview::Renderer for Renderer<B> {
                 .iter()
                 .fold(Vec::new(), |mut acc, span| {
                     let content = ascii_buffer[span.start..span.end].to_string();
-                    let content_width = text_width(
-                        self.backend(),
-                        data_font,
-                        text_size,
+                    let content_width = self.measure(
                         &content,
-                    );
+                        text_size,
+                        data_font,
+                        bounds.size(),
+                    ).0;
                     let color = match span.ty {
                         SpanType::Printable => style.data_color,
                         SpanType::NonPrintable => style.non_printable_color.unwrap(),
@@ -556,7 +573,7 @@ impl<B: Backend + BackendWithText> hexview::Renderer for Renderer<B> {
             let primitives = vec![
                 // Offset
                 Primitive::Text {
-                    content: format!("{:08X}", i * 16),
+                    content: format!("{:08X}", i * column_count),
                     bounds: Rectangle {
                         x: line_x,
                         y: line_y,
@@ -617,19 +634,19 @@ impl<B: Backend + BackendWithText> hexview::Renderer for Renderer<B> {
         let line_offset = cursor % column_count;
         let line_str = &byte_buffers[line];
 
-        let byte_offset = text_width(
-            self.backend(),
-            data_font,
-            text_size,
+        let byte_offset = self.measure(
             &line_str[0..(line_offset * 3)],
-        );
-
-        let pair_width = text_width(
-            self.backend(),
-            data_font,
             text_size,
+            data_font,
+            bounds.size(),
+        ).0;
+
+        let pair_width = self.measure(
             &line_str[(line_offset * 3)..(line_offset * 3 + 2)],
-        );
+            text_size,
+            data_font,
+            bounds.size(),
+        ).0;
 
         let cursor_width = pair_width + CURSOR_PADDING;
 
@@ -672,15 +689,18 @@ impl<B: Backend + BackendWithText> hexview::Renderer for Renderer<B> {
         let debug_info = if debug_enabled {
             let debug_text = format!(
                 "text_size: {}\n\
-                keyboard_focus: {}\n\
-                cursor: {}\n\
-                cursor_position: ({}, {})\n\
-                cursor_size: {}x{}\n\
-                bytes length: {}\n\
-                byte_offset: {}\n\
-                test_offset: {}\n\
-                bounds: ({}, {}) {}x{}",
-                text_size, keyboard_focus, cursor,
+                 column_count: {}\n\
+                 bytes_header_width: {}\n\
+                 keyboard_focus: {}\n\
+                 cursor: {}\n\
+                 cursor_position: ({}, {})\n\
+                 cursor_size: {}x{}\n\
+                 bytes length: {}\n\
+                 byte_offset: {}\n\
+                 test_offset: {}\n\
+                 bounds: ({}, {}) {}x{}",
+                text_size, column_count, keyboard_focus, cursor,
+                bytes_header_width,
                 cursor_mesh_pos[0], cursor_mesh_pos[1],
                 cursor_size.width, cursor_size.height,
                 data.len(), byte_offset, test_offset,
@@ -734,33 +754,10 @@ impl<B: Backend + BackendWithText> hexview::Renderer for Renderer<B> {
     }
 }
 
-fn hexpairs(bytes: &[u8]) -> String {
-    bytes
-        .iter()
-        .enumerate()
-        .fold(String::new(), |mut acc, (i, b)| {
-            let high = HEX_CHARS[(b >> 4) as usize] as char;
-            let low = HEX_CHARS[(b & 0xF) as usize] as char;
-
-            acc.push(high);
-            acc.push(low);
-
-            if i != bytes.len() - 1 {
-                acc.push(' ');
-            }
-
-            acc
-        })
-}
-
 fn group(primitives: Vec<Primitive>) -> Primitive {
     Primitive::Group {
         primitives,
     }
-}
-
-fn text_width<B: BackendWithText>(backend: &B, font: Font, size: f32, text: &str) -> f32 {
-    backend.measure(text, size, font, LARGE_BOUNDS).0
 }
 
 fn span_dedup(a: &mut LineSpan, b: &mut LineSpan) -> bool {

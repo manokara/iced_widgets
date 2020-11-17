@@ -55,14 +55,19 @@ impl<'a> Iterator for StrChunkIter<'a> {
     }
 }
 
-#[cfg_attr(test, test)]
-fn test_chunks() {
-    let s = "00 01 02 03";
-    let mut it = s.chunks(3);
+#[cfg(test)]
+mod test {
+    #[test]
+    fn test_chunks() {
+        use super::StrChunk;
 
-    assert_eq!(it.next(), Some("00 "));
-    assert_eq!(it.next(), Some("01 "));
-    assert_eq!(it.next(), Some("02 "));
-    assert_eq!(it.next(), Some("03"));
-    assert_eq!(it.next(), None);
+        let s = "00 01 02 03";
+        let mut it = s.chunks(3);
+
+        assert_eq!(it.next(), Some("00 "));
+        assert_eq!(it.next(), Some("01 "));
+        assert_eq!(it.next(), Some("02 "));
+        assert_eq!(it.next(), Some("03"));
+        assert_eq!(it.next(), None);
+    }
 }

@@ -204,7 +204,7 @@ where
         let keyboard_focus = self.state.keyboard_focus;
         let test_offset = self.state.test_offset;
         let debug_enabled = self.state.debug_enabled;
-        let last_click_pos = self.state.last_click_pos;
+        let _last_click_pos = self.state.last_click_pos;
 
         match event {
             Event::Mouse(MouseEvent::ButtonPressed(MouseButton::Left)) => {
@@ -251,7 +251,7 @@ where
                 self.state.set_keyboard_focus(layout.bounds().contains(cursor_position));
             }
 
-            Event::Mouse(MouseEvent::CursorMoved { x, y }) => {
+            Event::Mouse(MouseEvent::CursorMoved { .. }) => {
                 if self.state.is_dragging {
                     let cursor_from_pos = renderer.cursor_offset(
                         layout.bounds(),
