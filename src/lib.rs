@@ -11,6 +11,9 @@
 #![deny(missing_docs)]
 #![deny(missing_debug_implementations)]
 
+#[cfg(not(any(feature = "hexview")))]
+compile_error!("No widgets to be compiled.");
+
 pub mod core;
 pub mod graphics;
 pub mod native;
