@@ -5,6 +5,9 @@ authors = ["Mark Nokalt <marknokalt@live.com>"]
 edition = "2018"
 publish = false
 
+[features]
+glow = ["iced/glow"]
+
 [dependencies]
 iced = { git = "https://github.com/hecrj/iced" , rev = "73811c3" }
 iced_widgets = { path = "../../" }
